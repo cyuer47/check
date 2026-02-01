@@ -17,6 +17,11 @@ const DEBUG_REQUESTS =
 
 const SECRET = process.env.SECRET || "supersecretkey";
 const PORT = process.env.PORT || 3000;
+// How many recorded violations before auto-ban (default: 1 = immediate ban)
+const VIOLATION_THRESHOLD = parseInt(
+  process.env.VIOLATION_THRESHOLD || "1",
+  10,
+);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -126,7 +131,7 @@ function sendSSE(sessionId, name, data) {
   if (!clients) return;
   const teacherPayload = JSON.stringify(data || {});
   const studentPayload = JSON.stringify(
-    sanitizeSessionPayloadForStudents(data || {})
+    sanitizeSessionPayloadForStudents(data || {}),
   );
   for (const res of clients) {
     try {
@@ -148,7 +153,7 @@ function sendSSE(sessionId, name, data) {
 async function buildSessionPayload(sessionId) {
   const sess = await db.get(
     "SELECT s.*, k.naam as klasnaam, k.klascode FROM sessies s JOIN klassen k ON k.id = s.klas_id WHERE s.id = ?",
-    sessionId
+    sessionId,
   );
   if (!sess) return null;
 
@@ -168,19 +173,19 @@ async function buildSessionPayload(sessionId) {
   const currentQuestion = sess.current_question_id
     ? await db.get(
         "SELECT id, vraag, antwoord FROM vragen WHERE id = ?",
-        sess.current_question_id
+        sess.current_question_id,
       )
     : null;
   const answerCountRow = currentQuestion
     ? await db.get(
         "SELECT COUNT(*) as c FROM resultaten WHERE sessie_id = ? AND vraag_id = ?",
         sessionId,
-        currentQuestion.id
+        currentQuestion.id,
       )
     : { c: 0 };
   const leerlingen = await db.all(
     "SELECT id, naam FROM leerlingen WHERE klas_id = ?",
-    sess.klas_id
+    sess.klas_id,
   );
 
   // attach ephemeral presence info (updated via /status-update)
@@ -193,7 +198,7 @@ async function buildSessionPayload(sessionId) {
 
   const totalStudents = await db.get(
     "SELECT COUNT(*) as c FROM leerlingen WHERE klas_id = ?",
-    sess.klas_id
+    sess.klas_id,
   );
   // also expose count on sess for convenience
   sess.total_students = totalStudents.c || 0;
@@ -206,7 +211,7 @@ async function buildSessionPayload(sessionId) {
        GROUP BY l.id
        ORDER BY points DESC, l.naam ASC`,
     sessionId,
-    sess.klas_id
+    sess.klas_id,
   );
 
   const recent = await db.all(
@@ -217,12 +222,12 @@ async function buildSessionPayload(sessionId) {
        WHERE r.sessie_id = ?
        ORDER BY (CASE WHEN r.status IS NULL OR r.status = 'onbekend' THEN 0 ELSE 1 END), r.created_at DESC
        LIMIT 50`,
-    sessionId
+    sessionId,
   );
 
   const pendingRow = await db.get(
     "SELECT COUNT(*) as c FROM resultaten WHERE sessie_id = ? AND (status IS NULL OR status = 'onbekend')",
-    sessionId
+    sessionId,
   );
 
   return {
@@ -399,6 +404,22 @@ async function initDB() {
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS docenten (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        naam TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        wachtwoord TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        reset_token TEXT,
+        reset_token_expiry TIMESTAMP,
+        avatar TEXT,
+        bio TEXT DEFAULT '',
+        vakken TEXT DEFAULT '',
+        is_public INTEGER DEFAULT 0,
+        badge TEXT DEFAULT 'none',
+        current_ebook_id INTEGER
+      );
       
       CREATE TABLE IF NOT EXISTS klassen (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -469,13 +490,13 @@ async function initDB() {
     async function runMigrationIfNeeded() {
       try {
         const row = await db.get(
-          "SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+          "SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
         );
         const cnt = row?.cnt || 0;
         const migrationPath = path.join(__dirname, "sqlite_migration.sql");
         if (cnt > 5) {
           console.log(
-            `DB already has tables (count=${cnt}), skipping migration.`
+            `DB already has tables (count=${cnt}), skipping migration.`,
           );
           return;
         }
@@ -491,7 +512,7 @@ async function initDB() {
           .filter(
             (line) =>
               !line.trim().startsWith("--") &&
-              !/^(PRAGMA|BEGIN|COMMIT)/i.test(line.trim())
+              !/^(PRAGMA|BEGIN|COMMIT)/i.test(line.trim()),
           )
           .join("\n");
         const stmts = sql
@@ -520,16 +541,58 @@ async function initDB() {
 
     // Ensure persistent per-user ebook column exists (safe ALTER TABLE)
     try {
-      const cols = await db.all("PRAGMA table_info(docenten);");
-      const hasCol = cols.some((c) => c.name === "current_ebook_id");
-      if (!hasCol) {
-        await db.exec(
-          "ALTER TABLE docenten ADD COLUMN current_ebook_id INTEGER;"
+      let cols = await db.all("PRAGMA table_info(docenten);");
+      // If table does not exist at all, create a safe fallback schema
+      if (!cols || cols.length === 0) {
+        await db.exec(`CREATE TABLE IF NOT EXISTS docenten (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          naam TEXT NOT NULL,
+          email TEXT UNIQUE NOT NULL,
+          wachtwoord TEXT NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+          reset_token TEXT,
+          reset_token_expiry TIMESTAMP,
+          avatar TEXT,
+          bio TEXT DEFAULT '',
+          vakken TEXT DEFAULT '',
+          is_public INTEGER DEFAULT 0,
+          badge TEXT DEFAULT 'none',
+          current_ebook_id INTEGER,
+          rol TEXT DEFAULT 'docent'
+        );`);
+        console.log("Created docenten table (fallback)");
+        cols = await db.all("PRAGMA table_info(docenten);");
+      }
+
+      const colNames = cols.map((c) => c.name);
+      const need = [];
+      if (!colNames.includes("current_ebook_id"))
+        need.push("ALTER TABLE docenten ADD COLUMN current_ebook_id INTEGER;");
+      if (!colNames.includes("avatar"))
+        need.push("ALTER TABLE docenten ADD COLUMN avatar TEXT;");
+      if (!colNames.includes("bio"))
+        need.push("ALTER TABLE docenten ADD COLUMN bio TEXT DEFAULT '';");
+      if (!colNames.includes("vakken"))
+        need.push("ALTER TABLE docenten ADD COLUMN vakken TEXT DEFAULT '';");
+      if (!colNames.includes("is_public"))
+        need.push(
+          "ALTER TABLE docenten ADD COLUMN is_public INTEGER DEFAULT 0;",
         );
-        console.log("Added column docenten.current_ebook_id");
+      if (!colNames.includes("badge"))
+        need.push("ALTER TABLE docenten ADD COLUMN badge TEXT DEFAULT 'none';");
+      if (!colNames.includes("rol"))
+        need.push("ALTER TABLE docenten ADD COLUMN rol TEXT DEFAULT 'docent';");
+
+      for (const q of need) {
+        try {
+          await db.exec(q);
+          console.log("Added docenten column via:", q);
+        } catch (err) {
+          console.warn("Could not add docenten column:", err.message);
+        }
       }
     } catch (err) {
-      console.warn("Could not ensure current_ebook_id column:", err.message);
+      console.warn("Could not inspect docenten columns:", err.message);
     }
 
     // Ensure sessies has the columns used by the app (safe ALTER TABLE)
@@ -543,11 +606,11 @@ async function initDB() {
         need.push("ALTER TABLE sessies ADD COLUMN actief INTEGER DEFAULT 1;");
       if (!colNames.includes("started_at"))
         need.push(
-          "ALTER TABLE sessies ADD COLUMN started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;"
+          "ALTER TABLE sessies ADD COLUMN started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
         );
       if (!colNames.includes("round_seen"))
         need.push(
-          "ALTER TABLE sessies ADD COLUMN round_seen TEXT DEFAULT '[]';"
+          "ALTER TABLE sessies ADD COLUMN round_seen TEXT DEFAULT '[]';",
         );
       if (!colNames.includes("prev_student_id"))
         need.push("ALTER TABLE sessies ADD COLUMN prev_student_id INTEGER;");
@@ -555,13 +618,18 @@ async function initDB() {
         need.push("ALTER TABLE sessies ADD COLUMN current_student_id INTEGER;");
       if (!colNames.includes("current_question_id"))
         need.push(
-          "ALTER TABLE sessies ADD COLUMN current_question_id INTEGER;"
+          "ALTER TABLE sessies ADD COLUMN current_question_id INTEGER;",
         );
       // Ensure question_start_time exists (used to show when a question was sent)
       if (!colNames.includes("question_start_time"))
         need.push(
-          "ALTER TABLE sessies ADD COLUMN question_start_time TIMESTAMP NULL;"
+          "ALTER TABLE sessies ADD COLUMN question_start_time TIMESTAMP NULL;",
         );
+      // Ensure test features exist
+      if (!colNames.includes("is_toets"))
+        need.push("ALTER TABLE sessies ADD COLUMN is_toets INTEGER DEFAULT 0;");
+      if (!colNames.includes("locked"))
+        need.push("ALTER TABLE sessies ADD COLUMN locked INTEGER DEFAULT 0;");
 
       for (const q of need) {
         try {
@@ -582,11 +650,11 @@ async function initDB() {
       const rneed = [];
       if (!rcolNames.includes("status"))
         rneed.push(
-          "ALTER TABLE resultaten ADD COLUMN status TEXT DEFAULT 'onbekend';"
+          "ALTER TABLE resultaten ADD COLUMN status TEXT DEFAULT 'onbekend';",
         );
       if (!rcolNames.includes("points"))
         rneed.push(
-          "ALTER TABLE resultaten ADD COLUMN points INTEGER DEFAULT 0;"
+          "ALTER TABLE resultaten ADD COLUMN points INTEGER DEFAULT 0;",
         );
       if (!rcolNames.includes("antwoord_given"))
         rneed.push("ALTER TABLE resultaten ADD COLUMN antwoord_given TEXT;");
@@ -601,6 +669,30 @@ async function initDB() {
       }
     } catch (err) {
       console.warn("Could not inspect resultaten columns:", err.message);
+    }
+
+    // Ensure licenties has klas_id and vragenlijst_limit columns
+    try {
+      const lcols = await db.all("PRAGMA table_info(licenties);");
+      const lcolNames = (lcols || []).map((c) => c.name);
+      const lneed = [];
+      if (!lcolNames.includes("klas_id"))
+        lneed.push("ALTER TABLE licenties ADD COLUMN klas_id INTEGER;");
+      if (!lcolNames.includes("vragenlijst_limit"))
+        lneed.push(
+          "ALTER TABLE licenties ADD COLUMN vragenlijst_limit INTEGER DEFAULT 10;",
+        );
+
+      for (const q of lneed) {
+        try {
+          await db.exec(q);
+          console.log("Added licenties column via:", q);
+        } catch (err) {
+          console.warn("Could not add licenties column:", err.message);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not inspect licenties columns:", err.message);
     }
 
     console.log("Database ready ✅");
@@ -627,7 +719,7 @@ app.post("/register", async (req, res) => {
     // Check whether email already exists
     const exists = await db.get(
       "SELECT id FROM docenten WHERE email = ?",
-      email
+      email,
     );
     if (exists) return res.status(400).json({ error: "email already exists" });
 
@@ -636,13 +728,13 @@ app.post("/register", async (req, res) => {
     // Insert into docenten using the imported column names
     await db.run(
       "INSERT INTO docenten (naam, email, wachtwoord) VALUES (?, ?, ?)",
-      [naam, email, hashed]
+      [naam, email, hashed],
     );
 
     // Return token so the client can authenticate immediately
     const newUser = await db.get(
       "SELECT id, email, naam FROM docenten WHERE email = ?",
-      email
+      email,
     );
     const token = jwt.sign({ id: newUser.id, email: newUser.email }, SECRET);
 
@@ -698,11 +790,154 @@ function auth(req, res, next) {
   }
 }
 
+// Simple admin check: docent with id 1 is the admin
+function isAdmin(req) {
+  return req && req.user && req.user.id === 1;
+}
+
+// Return active license row for a given docent and klas (assigned to klas)
+async function getActiveLicenseForKlas(docentId, klasId) {
+  return db.get(
+    "SELECT * FROM licenties WHERE docent_id = ? AND klas_id = ? AND actief = 1 AND (vervalt_op IS NULL OR DATE(vervalt_op) >= DATE('now')) LIMIT 1",
+    docentId,
+    klasId,
+  );
+}
+
+// Find an unassigned active license for a docent (klas_id IS NULL)
+async function findUnassignedActiveLicense(docentId) {
+  return db.get(
+    "SELECT * FROM licenties WHERE docent_id = ? AND (klas_id IS NULL OR klas_id = 0) AND actief = 1 AND (vervalt_op IS NULL OR DATE(vervalt_op) >= DATE('now')) LIMIT 1",
+    docentId,
+  );
+}
+
+// Check whether a docent has any active license (assigned or unassigned)
+async function hasAnyActiveLicense(docentId) {
+  const r = await db.get(
+    "SELECT 1 as ok FROM licenties WHERE docent_id = ? AND actief = 1 AND (vervalt_op IS NULL OR DATE(vervalt_op) >= DATE('now')) LIMIT 1",
+    docentId,
+  );
+  return !!r;
+}
+
+// Ensure there is an active license for klas (or admin). Throws Error('no_license') if missing.
+async function ensureActiveLicenseForKlasOrAdmin(req, klasId) {
+  if (isAdmin(req)) return true;
+  const lic = await getActiveLicenseForKlas(req.user.id, klasId);
+  if (!lic) throw new Error("no_license");
+  return lic;
+}
+
+// Admin: list docenten (simple helper for the admin UI)
+app.get("/admin/docenten", auth, async (req, res) => {
+  try {
+    if (!isAdmin(req)) return res.status(403).json({ error: "admin only" });
+    const rows = await db.all(
+      "SELECT id, naam, email FROM docenten ORDER BY id DESC",
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("/admin/docenten error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
 // --------------------
 // Protected endpoint
 // --------------------
-app.get("/me", auth, (req, res) => {
-  res.json({ id: req.user.id, email: req.user.email });
+app.get("/me", auth, async (req, res) => {
+  try {
+    const row = await db.get(
+      "SELECT id, naam, email, rol, avatar FROM docenten WHERE id = ?",
+      req.user.id,
+    );
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json(row);
+  } catch (err) {
+    console.error("/me error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// --------------------
+// Profile endpoints (authenticated)
+// --------------------
+app.get("/profile", auth, async (req, res) => {
+  try {
+    const profile = await db.get(
+      "SELECT id, naam, email, avatar, bio, vakken, is_public, badge FROM docenten WHERE id = ?",
+      req.user.id,
+    );
+    if (!profile) return res.status(404).json({ error: "Not found" });
+    res.json({ profile });
+  } catch (err) {
+    console.error("Get profile error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/profile", auth, express.json(), async (req, res) => {
+  try {
+    const { naam, email, bio, vakken, avatar, password, is_public } = req.body;
+    if (email) {
+      const exists = await db.get(
+        "SELECT id FROM docenten WHERE email = ? AND id != ?",
+        email,
+        req.user.id,
+      );
+      if (exists)
+        return res.status(400).json({ error: "email already exists" });
+    }
+
+    const updates = [];
+    const params = [];
+    if (naam !== undefined) {
+      updates.push("naam = ?");
+      params.push(naam);
+    }
+    if (email !== undefined) {
+      updates.push("email = ?");
+      params.push(email);
+    }
+    if (bio !== undefined) {
+      updates.push("bio = ?");
+      params.push(bio);
+    }
+    if (vakken !== undefined) {
+      updates.push("vakken = ?");
+      params.push(vakken);
+    }
+    if (avatar !== undefined) {
+      updates.push("avatar = ?");
+      params.push(avatar);
+    }
+    if (typeof is_public !== "undefined") {
+      updates.push("is_public = ?");
+      params.push(is_public ? 1 : 0);
+    }
+    if (password) {
+      const hash = await bcrypt.hash(password, 10);
+      updates.push("wachtwoord = ?");
+      params.push(hash);
+    }
+
+    if (updates.length === 0) return res.json({ ok: true });
+
+    params.push(req.user.id);
+    await db.run(
+      `UPDATE docenten SET ${updates.join(", ")} WHERE id = ?`,
+      ...params,
+    );
+    const updated = await db.get(
+      "SELECT id, naam, email, avatar, bio, vakken, is_public, badge FROM docenten WHERE id = ?",
+      req.user.id,
+    );
+    res.json({ profile: updated });
+  } catch (err) {
+    console.error("Update profile error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 // Set currently-opened ebook for the authenticated user (persisted in DB)
@@ -724,7 +959,7 @@ app.post("/open-ebook", auth, express.json(), async (req, res) => {
          AND (l.vervalt_op IS NULL OR DATE(l.vervalt_op) >= DATE('now'))
        LIMIT 1`,
       id,
-      req.user.id
+      req.user.id,
     );
 
     if (!lic) {
@@ -734,7 +969,7 @@ app.post("/open-ebook", auth, express.json(), async (req, res) => {
     await db.run(
       "UPDATE docenten SET current_ebook_id = ? WHERE id = ?",
       id,
-      req.user.id
+      req.user.id,
     );
     res.json({ ok: true, id });
   } catch (err) {
@@ -748,13 +983,13 @@ app.get("/my-current-ebook", auth, async (req, res) => {
   try {
     const row = await db.get(
       "SELECT current_ebook_id FROM docenten WHERE id = ?",
-      req.user.id
+      req.user.id,
     );
     const id = row?.current_ebook_id || null;
     if (!id) return res.json({ id: null });
     const book = await db.get(
       "SELECT id, titel, omschrijving FROM boeken WHERE id = ?",
-      id
+      id,
     );
     res.json({ id, book });
   } catch (err) {
@@ -771,13 +1006,13 @@ app.get("/dashboard-data", auth, async (req, res) => {
 
     const docent = await db.get(
       "SELECT id, naam, avatar, current_ebook_id FROM docenten WHERE id = ?",
-      docentId
+      docentId,
     );
     console.log("Loaded docent:", !!docent);
 
     const klassen = await db.all(
       "SELECT * FROM klassen WHERE docent_id = ? ORDER BY id DESC",
-      docentId
+      docentId,
     );
     console.log("Loaded klassen:", (klassen || []).length);
 
@@ -785,7 +1020,7 @@ app.get("/dashboard-data", auth, async (req, res) => {
     try {
       licenties = await db.all(
         "SELECT * FROM licenties WHERE docent_id = ? AND actief = 1 AND (vervalt_op IS NULL OR DATE(vervalt_op) >= DATE('now'))",
-        docentId
+        docentId,
       );
       console.log("Loaded licenties:", licenties.length);
     } catch (err) {
@@ -797,15 +1032,69 @@ app.get("/dashboard-data", auth, async (req, res) => {
       ? licenties.some((l) => l.type === "vragenlijsten")
       : false;
 
+    // Ensure required library tables exist before querying (defensive)
+    try {
+      const t1 = await db.get(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='bibliotheek_vragenlijsten'",
+      );
+      if (!t1) {
+        await db.exec(`CREATE TABLE IF NOT EXISTS bibliotheek_vragenlijsten (
+          id INTEGER PRIMARY KEY,
+          naam TEXT NOT NULL,
+          beschrijving TEXT DEFAULT NULL,
+          licentie_type TEXT DEFAULT 'gratis',
+          created_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+        );`);
+        console.log("Created bibliotheek_vragenlijsten (on-demand)");
+      }
+
+      const tban = await db.get(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='banned_leerlingen'",
+      );
+      if (!tban) {
+        await db.exec(`CREATE TABLE IF NOT EXISTS banned_leerlingen (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          klas_id INTEGER NOT NULL,
+          naam TEXT NOT NULL,
+          reden TEXT DEFAULT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+        );`);
+        console.log("Created banned_leerlingen (on-demand)");
+      }
+
+      // ensure a violations table exists to keep an audit trail of incidents
+      const tviol = await db.get(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='violations'",
+      );
+      if (!tviol) {
+        await db.exec(`CREATE TABLE IF NOT EXISTS violations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          sessie_id INTEGER DEFAULT NULL,
+          klas_id INTEGER NOT NULL,
+          leerling_id INTEGER DEFAULT NULL,
+          naam TEXT NOT NULL,
+          reason TEXT DEFAULT NULL,
+          severity INTEGER DEFAULT 1,
+          created_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+        );`);
+        console.log("Created violations (on-demand)");
+      }
+    } catch (e) {
+      console.warn(
+        "Could not ensure bibliotheek_vragenlijsten on-demand:",
+        e.message,
+      );
+    }
+
     let biblio_lijsten = [];
     try {
       if (docentId === 3) {
         biblio_lijsten = await db.all(
-          "SELECT * FROM bibliotheek_vragenlijsten ORDER BY id DESC"
+          "SELECT * FROM bibliotheek_vragenlijsten ORDER BY id DESC",
         );
       } else {
         biblio_lijsten = await db.all(
-          "SELECT * FROM bibliotheek_vragenlijsten WHERE licentie_type != 'verborgen' ORDER BY id DESC"
+          "SELECT * FROM bibliotheek_vragenlijsten WHERE licentie_type != 'verborgen' ORDER BY id DESC",
         );
       }
       console.log("Loaded biblio_lijsten:", (biblio_lijsten || []).length);
@@ -814,11 +1103,28 @@ app.get("/dashboard-data", auth, async (req, res) => {
       biblio_lijsten = [];
     }
 
+    try {
+      const t2 = await db.get(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='boeken'",
+      );
+      if (!t2) {
+        await db.exec(`CREATE TABLE IF NOT EXISTS boeken (
+          id INTEGER PRIMARY KEY,
+          titel TEXT NOT NULL,
+          bestand TEXT NOT NULL,
+          omschrijving TEXT DEFAULT NULL
+        );`);
+        console.log("Created boeken (on-demand)");
+      }
+    } catch (e) {
+      console.warn("Could not ensure boeken on-demand:", e.message);
+    }
+
     let boeken = [];
     try {
       if (docentId === -1) {
         boeken = await db.all(
-          "SELECT id, titel, omschrijving FROM boeken ORDER BY id DESC"
+          "SELECT id, titel, omschrijving FROM boeken ORDER BY id DESC",
         );
       } else {
         boeken = await db.all(
@@ -831,14 +1137,14 @@ app.get("/dashboard-data", auth, async (req, res) => {
           AND (l.vervalt_op IS NULL OR DATE(l.vervalt_op) >= DATE('now'))
         ORDER BY b.id DESC
       `,
-          docentId
+          docentId,
         );
       }
       console.log("Loaded boeken:", (boeken || []).length);
     } catch (err) {
       console.warn(
         "Could not load boeken with licentie join, falling back to empty list:",
-        err.message
+        err.message,
       );
       boeken = [];
     }
@@ -863,22 +1169,160 @@ app.post("/create-klas", auth, express.json(), async (req, res) => {
     const naam = (req.body.naam || "").trim();
     const vak = (req.body.vak || "").trim();
     if (!naam) return res.status(400).json({ error: "naam required" });
+
+    // Non-admins must have an unassigned active license which will be consumed/assigned to the new klas
+    if (!isAdmin(req)) {
+      const lic = await findUnassignedActiveLicense(req.user.id);
+      if (!lic)
+        return res
+          .status(403)
+          .json({ error: "no active license to create klas" });
+
+      const code = crypto
+        .randomBytes(4)
+        .toString("hex")
+        .slice(0, 6)
+        .toUpperCase();
+
+      const r = await db.run(
+        "INSERT INTO klassen (docent_id, naam, klascode, vak, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+        req.user.id,
+        naam,
+        code,
+        vak,
+      );
+      const klas = await db.get("SELECT * FROM klassen WHERE id = ?", r.lastID);
+
+      // assign license to klas
+      await db.run(
+        "UPDATE licenties SET klas_id = ? WHERE id = ?",
+        klas.id,
+        lic.id,
+      );
+
+      res.json({ ok: true, klas });
+      return;
+    }
+
+    // admin may create klas freely; however, if admin has an unassigned active license, assign it to the newly created klas
     const code = crypto
       .randomBytes(4)
       .toString("hex")
       .slice(0, 6)
       .toUpperCase();
+
     const r = await db.run(
       "INSERT INTO klassen (docent_id, naam, klascode, vak, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
       req.user.id,
       naam,
       code,
-      vak
+      vak,
     );
     const klas = await db.get("SELECT * FROM klassen WHERE id = ?", r.lastID);
+
+    try {
+      const lic = await findUnassignedActiveLicense(req.user.id);
+      if (lic) {
+        await db.run(
+          "UPDATE licenties SET klas_id = ? WHERE id = ?",
+          klas.id,
+          lic.id,
+        );
+        console.log(
+          `Assigned existing license ${lic.id} to klas ${klas.id} for docent ${req.user.id}`,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        "Could not assign license to klas for admin creation:",
+        err.message,
+      );
+    }
+
     res.json({ ok: true, klas });
   } catch (err) {
     console.error("/create-klas error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Admin: list licenses
+app.get("/admin/licenties", auth, async (req, res) => {
+  try {
+    if (!isAdmin(req)) return res.status(403).json({ error: "admin only" });
+    const rows = await db.all("SELECT * FROM licenties ORDER BY id DESC");
+    res.json(rows);
+  } catch (err) {
+    console.error("/admin/licenties GET error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Admin: list licenses for specific docent
+app.get("/admin/licenties/:docentId", auth, async (req, res) => {
+  try {
+    if (!isAdmin(req)) return res.status(403).json({ error: "admin only" });
+    const docentId = parseInt(req.params.docentId, 10);
+    if (!docentId) return res.status(400).json({ error: "invalid docent id" });
+
+    const rows = await db.all(
+      `SELECT l.*, k.naam as klas_naam
+       FROM licenties l
+       LEFT JOIN klassen k ON k.id = l.klas_id
+       WHERE l.docent_id = ?
+       ORDER BY l.id DESC`,
+      docentId,
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("/admin/licenties/:docentId GET error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Admin: create license
+app.post("/admin/licenties", auth, express.json(), async (req, res) => {
+  try {
+    if (!isAdmin(req)) return res.status(403).json({ error: "admin only" });
+    const docent_id = parseInt(req.body.docent_id, 10);
+    const klas_id = req.body.klas_id ? parseInt(req.body.klas_id, 10) : null;
+    const vragenlijst_limit = req.body.vragenlijst_limit
+      ? parseInt(req.body.vragenlijst_limit, 10)
+      : 10;
+    const vervalt_op = req.body.vervalt_op ? String(req.body.vervalt_op) : null;
+    if (!docent_id)
+      return res.status(400).json({ error: "docent_id required" });
+
+    const r = await db.run(
+      "INSERT INTO licenties (docent_id, type, actief, vervalt_op, klas_id, vragenlijst_limit, created_at) VALUES (?, 'vragenlijsten', 1, ?, ?, ?, CURRENT_TIMESTAMP)",
+      docent_id,
+      vervalt_op,
+      klas_id,
+      vragenlijst_limit,
+    );
+    const lic = await db.get("SELECT * FROM licenties WHERE id = ?", r.lastID);
+    res.json({ ok: true, lic });
+  } catch (err) {
+    console.error("/admin/licenties POST error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Admin: delete license (only if it has no expiry date)
+app.delete("/admin/licenties/:id", auth, async (req, res) => {
+  try {
+    if (!isAdmin(req)) return res.status(403).json({ error: "admin only" });
+    const id = parseInt(req.params.id, 10);
+    const lic = await db.get("SELECT * FROM licenties WHERE id = ?", id);
+    if (!lic) return res.status(404).json({ error: "not found" });
+    if (lic.vervalt_op)
+      return res
+        .status(400)
+        .json({ error: "cannot delete license with expiry date" });
+    await db.run("DELETE FROM licenties WHERE id = ?", id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("/admin/licenties DELETE error:", err);
     res.status(500).json({ error: "server error" });
   }
 });
@@ -890,7 +1334,7 @@ app.get("/search", async (req, res) => {
     if (!q) return res.json([]);
     const rows = await db.all(
       "SELECT id, naam, badge FROM docenten WHERE is_public = 1 AND naam LIKE ? LIMIT 20",
-      `%${q}%`
+      `%${q}%`,
     );
     res.json(rows);
   } catch (err) {
@@ -906,17 +1350,17 @@ app.get("/klas/:id", auth, async (req, res) => {
     const klas = await db.get(
       "SELECT * FROM klassen WHERE id = ? AND docent_id = ?",
       klasId,
-      req.user.id
+      req.user.id,
     );
     if (!klas) return res.status(404).json({ error: "klas not found" });
 
     const leerlingen = await db.all(
       "SELECT id, naam FROM leerlingen WHERE klas_id = ? ORDER BY naam",
-      klasId
+      klasId,
     );
     const vragenlijsten = await db.all(
       "SELECT id, naam FROM vragenlijsten WHERE klas_id = ? ORDER BY id DESC",
-      klasId
+      klasId,
     );
 
     res.json({ klas, leerlingen, vragenlijsten });
@@ -935,7 +1379,7 @@ app.post("/delete-klas", auth, express.json(), async (req, res) => {
     const klas = await db.get(
       "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
       klasId,
-      req.user.id
+      req.user.id,
     );
     if (!klas) return res.status(403).json({ error: "unauthorized" });
 
@@ -945,7 +1389,7 @@ app.post("/delete-klas", auth, express.json(), async (req, res) => {
       // Delete in order of dependencies
       await db.run(
         "DELETE FROM resultaten WHERE sessie_id IN (SELECT id FROM sessies WHERE klas_id = ?)",
-        klasId
+        klasId,
       );
       await db.run("DELETE FROM sessies WHERE klas_id = ?", klasId);
       await db.run("DELETE FROM vragen WHERE klas_id = ?", klasId);
@@ -954,7 +1398,7 @@ app.post("/delete-klas", auth, express.json(), async (req, res) => {
       await db.run(
         "DELETE FROM klassen WHERE id = ? AND docent_id = ?",
         klasId,
-        req.user.id
+        req.user.id,
       );
       await db.exec("COMMIT;");
     } catch (err) {
@@ -980,16 +1424,38 @@ app.post("/vragenlijst", auth, express.json(), async (req, res) => {
       return res.status(400).json({ error: "klas_id and naam required" });
 
     const klas = await db.get(
-      "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
+      "SELECT id, docent_id FROM klassen WHERE id = ?",
       klasId,
-      req.user.id
     );
-    if (!klas) return res.status(403).json({ error: "unauthorized" });
+    if (!klas) return res.status(404).json({ error: "klas not found" });
+    if (klas.docent_id !== req.user.id && !isAdmin(req))
+      return res.status(403).json({ error: "unauthorized" });
+
+    // Admin bypasses license checks
+    if (!isAdmin(req)) {
+      const lic = await getActiveLicenseForKlas(req.user.id, klasId);
+      if (!lic)
+        return res
+          .status(403)
+          .json({ error: "no active license for this class" });
+
+      // check vragenlijst limit
+      const cntRow = await db.get(
+        "SELECT COUNT(*) as c FROM vragenlijsten WHERE klas_id = ?",
+        klasId,
+      );
+      const current = cntRow?.c || 0;
+      const limit = lic.vragenlijst_limit || 10;
+      if (current >= limit)
+        return res
+          .status(403)
+          .json({ error: "vragenlijst limit reached for this license" });
+    }
 
     const r = await db.run(
       "INSERT INTO vragenlijsten (klas_id, naam) VALUES (?, ?)",
       klasId,
-      naam
+      naam,
     );
     res.json({ ok: true, id: r.lastID });
   } catch (err) {
@@ -1007,14 +1473,14 @@ app.put("/vragenlijst/:id", auth, express.json(), async (req, res) => {
 
     const vl = await db.get(
       "SELECT klas_id FROM vragenlijsten WHERE id = ?",
-      id
+      id,
     );
     if (!vl) return res.status(404).json({ error: "vragenlijst not found" });
 
     const klas = await db.get(
       "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
       vl.klas_id,
-      req.user.id
+      req.user.id,
     );
     if (!klas) return res.status(403).json({ error: "unauthorized" });
 
@@ -1033,21 +1499,21 @@ app.delete("/vragenlijst/:id", auth, async (req, res) => {
 
     const vl = await db.get(
       "SELECT klas_id FROM vragenlijsten WHERE id = ?",
-      id
+      id,
     );
     if (!vl) return res.status(404).json({ error: "vragenlijst not found" });
 
     const klas = await db.get(
       "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
       vl.klas_id,
-      req.user.id
+      req.user.id,
     );
     if (!klas) return res.status(403).json({ error: "unauthorized" });
 
     // Delete vragen and resultaten
     const vragen = await db.all(
       "SELECT id FROM vragen WHERE vragenlijst_id = ?",
-      id
+      id,
     );
     for (const v of vragen) {
       await db.run("DELETE FROM resultaten WHERE vraag_id = ?", v.id);
@@ -1069,7 +1535,7 @@ app.get("/vragenlijst/:id", auth, async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const lijst = await db.get(
       "SELECT v.*, k.docent_id, k.naam as klasnaam, v.klas_id FROM vragenlijsten v JOIN klassen k ON v.klas_id = k.id WHERE v.id = ?",
-      id
+      id,
     );
     if (!lijst) return res.status(404).json({ error: "vragenlijst not found" });
     if (lijst.docent_id !== req.user.id)
@@ -1077,7 +1543,7 @@ app.get("/vragenlijst/:id", auth, async (req, res) => {
 
     const vragen = await db.all(
       "SELECT * FROM vragen WHERE vragenlijst_id = ? ORDER BY id DESC",
-      id
+      id,
     );
 
     res.json({ ...lijst, vragen });
@@ -1121,23 +1587,32 @@ app.post("/vragenlijst/:id/vraag", auth, express.json(), async (req, res) => {
 
     const vl = await db.get(
       "SELECT klas_id FROM vragenlijsten WHERE id = ?",
-      id
+      id,
     );
     if (!vl) return res.status(404).json({ error: "vragenlijst not found" });
 
     const klas = await db.get(
       "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
       vl.klas_id,
-      req.user.id
+      req.user.id,
     );
     if (!klas) return res.status(403).json({ error: "unauthorized" });
+
+    // Ensure license active for this klas
+    try {
+      await ensureActiveLicenseForKlasOrAdmin(req, vl.klas_id);
+    } catch (e) {
+      return res
+        .status(403)
+        .json({ error: "no active license for this class" });
+    }
 
     const r = await db.run(
       "INSERT INTO vragen (klas_id, vragenlijst_id, vraag, antwoord) VALUES (?, ?, ?, ?)",
       vl.klas_id,
       id,
       vraag,
-      antwoord
+      antwoord,
     );
     res.json({ ok: true, id: r.lastID });
   } catch (err) {
@@ -1158,14 +1633,14 @@ app.put("/vragen/:id", auth, express.json(), async (req, res) => {
     // Also select klas_id so we can verify ownership
     const v = await db.get(
       "SELECT vragenlijst_id, klas_id FROM vragen WHERE id = ?",
-      id
+      id,
     );
     if (!v) return res.status(404).json({ error: "vraag not found" });
 
     const klas = await db.get(
       "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
       v.klas_id,
-      req.user.id
+      req.user.id,
     );
     if (!klas) return res.status(403).json({ error: "unauthorized" });
 
@@ -1173,7 +1648,7 @@ app.put("/vragen/:id", auth, express.json(), async (req, res) => {
       "UPDATE vragen SET vraag = ?, antwoord = ? WHERE id = ?",
       vraag,
       antwoord,
-      id
+      id,
     );
     res.json({ ok: true });
   } catch (err) {
@@ -1188,16 +1663,24 @@ app.delete("/vragen/:id", auth, express.json(), async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const v = await db.get(
       "SELECT vragenlijst_id, klas_id FROM vragen WHERE id = ?",
-      id
+      id,
     );
     if (!v) return res.status(404).json({ error: "vraag not found" });
 
     const klas = await db.get(
       "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
       v.klas_id,
-      req.user.id
+      req.user.id,
     );
     if (!klas) return res.status(403).json({ error: "unauthorized" });
+
+    try {
+      await ensureActiveLicenseForKlasOrAdmin(req, v.klas_id);
+    } catch (e) {
+      return res
+        .status(403)
+        .json({ error: "no active license for this class" });
+    }
 
     await db.run("DELETE FROM resultaten WHERE vraag_id = ?", id);
     await db.run("DELETE FROM vragen WHERE id = ?", id);
@@ -1222,15 +1705,24 @@ app.post("/sessies", auth, express.json(), async (req, res) => {
     const klas = await db.get(
       "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
       klasId,
-      req.user.id
+      req.user.id,
     );
     if (!klas) return res.status(403).json({ error: "unauthorized" });
+
+    // ensure active license for klas
+    try {
+      await ensureActiveLicenseForKlasOrAdmin(req, klasId);
+    } catch (e) {
+      return res
+        .status(403)
+        .json({ error: "no active license for this class" });
+    }
 
     // verify vragenlijst belongs to klas
     const lijst = await db.get(
       "SELECT id FROM vragenlijsten WHERE id = ? AND klas_id = ?",
       vragenlijstId,
-      klasId
+      klasId,
     );
     if (!lijst)
       return res.status(400).json({ error: "vragenlijst not found for klas" });
@@ -1239,12 +1731,16 @@ app.post("/sessies", auth, express.json(), async (req, res) => {
     await db.run("UPDATE sessies SET actief = 0 WHERE klas_id = ?", klasId);
 
     // insert new sessie
+    const is_toets = req.body.is_toets ? 1 : 0;
+    const locked = req.body.locked ? 1 : 0;
     const r = await db.run(
-      `INSERT INTO sessies (klas_id, docent_id, vragenlijst_id, actief, started_at, round_seen, prev_student_id, current_student_id, current_question_id)
-       VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, json('[]'), NULL, NULL, NULL)`,
+      `INSERT INTO sessies (klas_id, docent_id, vragenlijst_id, actief, started_at, round_seen, prev_student_id, current_student_id, current_question_id, is_toets, locked)
+       VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, json('[]'), NULL, NULL, NULL, ?, ?)`,
       klasId,
       req.user.id,
-      vragenlijstId
+      vragenlijstId,
+      is_toets,
+      locked,
     );
     res.json({ ok: true, id: r.lastID });
   } catch (err) {
@@ -1268,7 +1764,7 @@ app.get("/start-sessie", async (req, res) => {
     const klasId = parseInt(req.query.klas_id || req.query.klas, 10);
     const vragenlijstId = parseInt(
       req.query.vragenlijst_id || req.query.vragenlijst,
-      10
+      10,
     );
     if (!klasId || !vragenlijstId)
       return res
@@ -1278,29 +1774,86 @@ app.get("/start-sessie", async (req, res) => {
     const klas = await db.get(
       "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
       klasId,
-      user.id
+      user.id,
     );
     if (!klas) return res.status(403).json({ error: "unauthorized" });
 
     const lijst = await db.get(
       "SELECT id FROM vragenlijsten WHERE id = ? AND klas_id = ?",
       vragenlijstId,
-      klasId
+      klasId,
     );
     if (!lijst)
       return res.status(400).json({ error: "vragenlijst not found for klas" });
 
     await db.run("UPDATE sessies SET actief = 0 WHERE klas_id = ?", klasId);
+    const is_toets =
+      req.query.is_toets === "1" || req.query.is_toets === "true" ? 1 : 0;
+    const locked =
+      req.query.locked === "1" || req.query.locked === "true" ? 1 : 0;
     const r = await db.run(
-      `INSERT INTO sessies (klas_id, docent_id, vragenlijst_id, actief, started_at, round_seen, prev_student_id, current_student_id, current_question_id)
-       VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, json('[]'), NULL, NULL, NULL)`,
+      `INSERT INTO sessies (klas_id, docent_id, vragenlijst_id, actief, started_at, round_seen, prev_student_id, current_student_id, current_question_id, is_toets, locked)
+       VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, json('[]'), NULL, NULL, NULL, ?, ?)`,
       klasId,
       user.id,
-      vragenlijstId
+      vragenlijstId,
+      is_toets,
+      locked,
     );
     res.json({ ok: true, id: r.lastID });
   } catch (err) {
     console.error("/start-sessie GET error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Lock/unlock a session (teacher only)
+app.post("/sessies/:id/lock", auth, express.json(), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const lock = req.body.lock ? 1 : 0;
+    const sess = await db.get(
+      "SELECT * FROM sessies WHERE id = ? AND docent_id = ?",
+      id,
+      req.user.id,
+    );
+    if (!sess)
+      return res
+        .status(404)
+        .json({ error: "sessie not found or unauthorized" });
+    await db.run("UPDATE sessies SET locked = ? WHERE id = ?", lock, id);
+    // broadcast lock change
+    sendSSE(id, "lock", { locked: lock });
+    await broadcastSession(id);
+    res.json({ ok: true, locked: lock });
+  } catch (err) {
+    console.error("/sessies/:id/lock error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// End toets (teacher only) - ends session and notifies students to exit fullscreen and logout
+app.post("/sessies/:id/end-toets", auth, express.json(), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const sess = await db.get(
+      "SELECT * FROM sessies WHERE id = ? AND docent_id = ?",
+      id,
+      req.user.id,
+    );
+    if (!sess)
+      return res
+        .status(404)
+        .json({ error: "sessie not found or unauthorized" });
+
+    // mark session inactive
+    await db.run("UPDATE sessies SET actief = 0 WHERE id = ?", id);
+    // broadcast special end-toets event
+    sendSSE(id, "end-toets", { message: "toets voorbij" });
+    await broadcastSession(id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("/sessies/:id/end-toets error:", err);
     res.status(500).json({ error: "server error" });
   }
 });
@@ -1314,9 +1867,17 @@ app.post("/delete-leerlingen", auth, express.json(), async (req, res) => {
     const klas2 = await db.get(
       "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
       klasId,
-      req.user.id
+      req.user.id,
     );
     if (!klas2) return res.status(403).json({ error: "unauthorized" });
+
+    try {
+      await ensureActiveLicenseForKlasOrAdmin(req, klasId);
+    } catch (e) {
+      return res
+        .status(403)
+        .json({ error: "no active license for this class" });
+    }
 
     await db.run("DELETE FROM leerlingen WHERE klas_id = ?", klasId);
     res.json({ ok: true });
@@ -1326,11 +1887,209 @@ app.post("/delete-leerlingen", auth, express.json(), async (req, res) => {
   }
 });
 
+// Student reports violation (e.g., exited fullscreen) — server logs the incident and applies threshold-based ban
+app.post("/leerling/violation", express.json(), async (req, res) => {
+  try {
+    const leerling_id = parseInt(req.body.leerling_id, 10) || null;
+    const klas_id = parseInt(req.body.klas_id, 10);
+    const reason = String(req.body.reason || "violation");
+    if (!klas_id) return res.status(400).json({ error: "klas_id required" });
+
+    // Find the leerling record if provided
+    let leerling = null;
+    if (leerling_id) {
+      leerling = await db.get(
+        "SELECT id, naam FROM leerlingen WHERE id = ? AND klas_id = ?",
+        leerling_id,
+        klas_id,
+      );
+      if (!leerling) {
+        // If no match, but a name was passed, we still record the violation with provided name
+        // For now, require either a matching leerling or a 'naam' parameter
+        if (!req.body.naam)
+          return res.status(404).json({ error: "leerling not found" });
+        leerling = { id: null, naam: String(req.body.naam) };
+      }
+    } else if (req.body.naam) {
+      leerling = { id: null, naam: String(req.body.naam) };
+    } else {
+      return res.status(400).json({ error: "leerling_id or naam required" });
+    }
+
+    // find active session for klas (optional)
+    const sess = await db.get(
+      "SELECT id FROM sessies WHERE klas_id = ? AND actief = 1 LIMIT 1",
+      klas_id,
+    );
+
+    // Insert into violations table
+    const ins = await db.run(
+      "INSERT INTO violations (sessie_id, klas_id, leerling_id, naam, reason) VALUES (?, ?, ?, ?, ?)",
+      sess ? sess.id : null,
+      klas_id,
+      leerling.id,
+      leerling.naam,
+      reason,
+    );
+
+    // Count violations for this leerling in this klas (simple total)
+    const cntRow = await db.get(
+      "SELECT COUNT(*) as c FROM violations WHERE klas_id = ? AND naam = ?",
+      klas_id,
+      leerling.naam,
+    );
+    const count = cntRow?.c || 0;
+
+    let banned = false;
+
+    if (count >= VIOLATION_THRESHOLD) {
+      // insert ban if not already banned
+      const exists = await db.get(
+        "SELECT id FROM banned_leerlingen WHERE klas_id = ? AND naam = ? LIMIT 1",
+        klas_id,
+        leerling.naam,
+      );
+      if (!exists) {
+        await db.run(
+          "INSERT INTO banned_leerlingen (klas_id, naam, reden, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)",
+          klas_id,
+          leerling.naam,
+          reason,
+        );
+      }
+
+      // Remove leerling if present
+      if (leerling.id) {
+        await db.run("DELETE FROM leerlingen WHERE id = ?", leerling.id);
+      }
+      banned = true;
+    }
+
+    // notify teacher via SSE if session exists
+    if (sess && sess.id) {
+      try {
+        sendSSE(sess.id, "violation", {
+          leerling_id: leerling.id,
+          naam: leerling.naam,
+          reason,
+          banned,
+          count,
+        });
+        await broadcastSession(sess.id);
+      } catch (e) {
+        console.warn("Could not broadcast violation:", e.message);
+      }
+    }
+
+    res.json({ ok: true, banned, count });
+  } catch (err) {
+    console.error("/leerling/violation error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Admin: list violations for a klas or sessie (requires auth & ownership)
+app.get("/admin/violations", auth, async (req, res) => {
+  try {
+    const klas_id = parseInt(req.query.klas_id, 10);
+    const sessie_id = parseInt(req.query.sessie_id, 10) || null;
+    if (!klas_id) return res.status(400).json({ error: "klas_id required" });
+
+    // confirm teacher owns the klas
+    const klas = await db.get(
+      "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
+      klas_id,
+      req.user.id,
+    );
+    if (!klas) return res.status(403).json({ error: "unauthorized" });
+
+    const rows = await db.all(
+      "SELECT v.id, v.sessie_id, v.klas_id, v.leerling_id, v.naam, v.reason, v.severity, v.created_at, (SELECT COUNT(1) FROM banned_leerlingen b WHERE b.klas_id = v.klas_id AND b.naam = v.naam) as banned_count FROM violations v WHERE v.klas_id = ? " +
+        (sessie_id ? " AND v.sessie_id = ? " : "") +
+        " ORDER BY v.created_at DESC LIMIT 200",
+      ...(sessie_id ? [klas_id, sessie_id] : [klas_id]),
+    );
+    res.json({ rows });
+  } catch (err) {
+    console.error("/admin/violations error", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Admin: list banned learners for a klas (requires auth & ownership)
+app.get("/admin/banned", auth, async (req, res) => {
+  try {
+    const klas_id = parseInt(req.query.klas_id, 10);
+    if (!klas_id) return res.status(400).json({ error: "klas_id required" });
+    const klas = await db.get(
+      "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
+      klas_id,
+      req.user.id,
+    );
+    if (!klas) return res.status(403).json({ error: "unauthorized" });
+
+    const rows = await db.all(
+      "SELECT id, klas_id, naam, reden, created_at FROM banned_leerlingen WHERE klas_id = ? ORDER BY created_at DESC",
+      klas_id,
+    );
+    res.json({ rows });
+  } catch (err) {
+    console.error("/admin/banned error", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Admin: unban learner by id or klas_id+naam (requires auth & ownership)
+app.post("/admin/unban", auth, async (req, res) => {
+  try {
+    const id = parseInt(req.body.id, 10) || null;
+    const klas_id = parseInt(req.body.klas_id, 10) || null;
+    const naam = req.body.naam || null;
+    if (!id && !(klas_id && naam))
+      return res
+        .status(400)
+        .json({ error: "id or (klas_id and naam) required" });
+
+    if (id) {
+      const row = await db.get(
+        "SELECT klas_id FROM banned_leerlingen WHERE id = ? LIMIT 1",
+        id,
+      );
+      if (!row) return res.status(404).json({ error: "not found" });
+      const klas = await db.get(
+        "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
+        row.klas_id,
+        req.user.id,
+      );
+      if (!klas) return res.status(403).json({ error: "unauthorized" });
+      await db.run("DELETE FROM banned_leerlingen WHERE id = ?", id);
+      return res.json({ ok: true });
+    }
+
+    // klas/naam route
+    const klas = await db.get(
+      "SELECT id FROM klassen WHERE id = ? AND docent_id = ?",
+      klas_id,
+      req.user.id,
+    );
+    if (!klas) return res.status(403).json({ error: "unauthorized" });
+    await db.run(
+      "DELETE FROM banned_leerlingen WHERE klas_id = ? AND naam = ?",
+      klas_id,
+      naam,
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("/admin/unban error", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
 // --------------------
 // Sessies & results API (authenticated)
 // --------------------
 console.log(
-  "Registering session routes: /sessies/:id, /sessies/:id/scoreboard, /sessies/:id/recent-answers, /sessies/:id/send_question"
+  "Registering session routes: /sessies/:id, /sessies/:id/scoreboard, /sessies/:id/recent-answers, /sessies/:id/send_question",
 );
 
 // Get session details including current question, answer count and students
@@ -1340,7 +2099,7 @@ app.get("/sessies/:id", auth, async (req, res) => {
     const sess = await db.get(
       "SELECT s.*, k.naam as klasnaam, k.klascode FROM sessies s JOIN klassen k ON k.id = s.klas_id WHERE s.id = ? AND s.docent_id = ?",
       id,
-      req.user.id
+      req.user.id,
     );
     if (!sess)
       return res
@@ -1350,20 +2109,20 @@ app.get("/sessies/:id", auth, async (req, res) => {
     const currentQuestion = sess.current_question_id
       ? await db.get(
           "SELECT id, vraag, antwoord FROM vragen WHERE id = ?",
-          sess.current_question_id
+          sess.current_question_id,
         )
       : null;
     const answerCountRow = currentQuestion
       ? await db.get(
           "SELECT COUNT(*) as c FROM resultaten WHERE sessie_id = ? AND vraag_id = ?",
           id,
-          currentQuestion.id
+          currentQuestion.id,
         )
       : { c: 0 };
 
     const leerlingen = await db.all(
       "SELECT id, naam FROM leerlingen WHERE klas_id = ?",
-      sess.klas_id
+      sess.klas_id,
     );
 
     res.json({
@@ -1386,7 +2145,7 @@ app.get("/sessies/:id/scoreboard", auth, async (req, res) => {
     const sess = await db.get(
       "SELECT * FROM sessies WHERE id = ? AND docent_id = ?",
       id,
-      req.user.id
+      req.user.id,
     );
     if (!sess)
       return res
@@ -1401,7 +2160,7 @@ app.get("/sessies/:id/scoreboard", auth, async (req, res) => {
        GROUP BY l.id
        ORDER BY points DESC, l.naam ASC`,
       id,
-      sess.klas_id
+      sess.klas_id,
     );
     res.json({ ok: true, rows });
   } catch (err) {
@@ -1417,7 +2176,7 @@ app.get("/sessies/:id/recent-answers", auth, async (req, res) => {
     const sess = await db.get(
       "SELECT * FROM sessies WHERE id = ? AND docent_id = ?",
       id,
-      req.user.id
+      req.user.id,
     );
     if (!sess)
       return res
@@ -1432,7 +2191,7 @@ app.get("/sessies/:id/recent-answers", auth, async (req, res) => {
        WHERE r.sessie_id = ?
        ORDER BY (CASE WHEN r.status IS NULL OR r.status = 'onbekend' THEN 0 ELSE 1 END), r.created_at DESC
        LIMIT 50`,
-      id
+      id,
     );
     res.json({ ok: true, rows });
   } catch (err) {
@@ -1452,7 +2211,7 @@ app.post(
       const sess = await db.get(
         "SELECT * FROM sessies WHERE id = ? AND docent_id = ?",
         id,
-        req.user.id
+        req.user.id,
       );
       if (!sess)
         return res
@@ -1461,7 +2220,7 @@ app.post(
 
       const asked = await db.all(
         "SELECT DISTINCT vraag_id FROM resultaten WHERE sessie_id = ?",
-        id
+        id,
       );
       const askedIds = asked.map((r) => r.vraag_id).filter(Boolean);
 
@@ -1470,7 +2229,7 @@ app.post(
         q = await db.get(
           "SELECT * FROM vragen WHERE klas_id = ? AND vragenlijst_id = ? ORDER BY RANDOM() LIMIT 1",
           sess.klas_id,
-          sess.vragenlijst_id
+          sess.vragenlijst_id,
         );
       } else {
         const placeholders = askedIds.map(() => "?").join(",");
@@ -1483,26 +2242,26 @@ app.post(
       await db.run(
         "UPDATE sessies SET current_question_id = ?, question_start_time = CURRENT_TIMESTAMP WHERE id = ?",
         q.id,
-        id
+        id,
       );
 
       // Clear previous answers for this question in this session
       await db.run(
         "DELETE FROM resultaten WHERE sessie_id = ? AND vraag_id = ?",
         id,
-        q.id
+        q.id,
       );
 
       res.json({ ok: true, vraag_id: q.id });
       // broadcast update to any connected teacher clients
       broadcastSession(id).catch((e) =>
-        console.error("broadcast send_question", e)
+        console.error("broadcast send_question", e),
       );
     } catch (err) {
       console.error("POST /sessies/:id/send_question error:", err);
       res.status(500).json({ error: "server error" });
     }
-  }
+  },
 );
 
 // Clear current question
@@ -1516,7 +2275,7 @@ app.post(
       const sess = await db.get(
         "SELECT * FROM sessies WHERE id = ? AND docent_id = ?",
         id,
-        req.user.id
+        req.user.id,
       );
       if (!sess)
         return res
@@ -1525,18 +2284,18 @@ app.post(
 
       await db.run(
         "UPDATE sessies SET current_question_id = NULL, question_start_time = NULL WHERE id = ?",
-        id
+        id,
       );
       res.json({ ok: true });
       // broadcast update
       broadcastSession(id).catch((e) =>
-        console.error("broadcast clear_question", e)
+        console.error("broadcast clear_question", e),
       );
     } catch (err) {
       console.error("POST /sessies/:id/clear_question error:", err);
       res.status(500).json({ error: "server error" });
     }
-  }
+  },
 );
 
 // Stop (end) a session — teacher only
@@ -1546,7 +2305,7 @@ app.post("/sessies/:id/stop", auth, express.json(), async (req, res) => {
     const sess = await db.get(
       "SELECT * FROM sessies WHERE id = ? AND docent_id = ?",
       id,
-      req.user.id
+      req.user.id,
     );
     if (!sess)
       return res
@@ -1556,13 +2315,13 @@ app.post("/sessies/:id/stop", auth, express.json(), async (req, res) => {
     // mark session inactive and clear current question
     await db.run(
       "UPDATE sessies SET actief = 0, current_question_id = NULL, question_start_time = NULL WHERE id = ?",
-      id
+      id,
     );
 
     res.json({ ok: true });
     // broadcast updated session to all clients
     broadcastSession(id).catch((e) =>
-      console.error("broadcast stop_session", e)
+      console.error("broadcast stop_session", e),
     );
   } catch (err) {
     console.error("POST /sessies/:id/stop error:", err);
@@ -1596,18 +2355,18 @@ app.post("/grade-answer", auth, express.json(), async (req, res) => {
       "UPDATE resultaten SET status = ?, points = ? WHERE id = ?",
       status,
       points,
-      resultaat_id
+      resultaat_id,
     );
     res.json({ ok: true });
     // broadcast update for the session that contains this resultaat
     try {
       const rrow = await db.get(
         "SELECT sessie_id FROM resultaten WHERE id = ?",
-        resultaat_id
+        resultaat_id,
       );
       if (rrow && rrow.sessie_id)
         broadcastSession(rrow.sessie_id).catch((e) =>
-          console.error("broadcast grade-answer", e)
+          console.error("broadcast grade-answer", e),
         );
     } catch (e) {
       console.warn("Could not broadcast after grade:", e.message);
@@ -1626,7 +2385,7 @@ app.delete("/sessies/:id/leerling/:lid", auth, async (req, res) => {
     const sess = await db.get(
       "SELECT * FROM sessies WHERE id = ? AND docent_id = ?",
       id,
-      req.user.id
+      req.user.id,
     );
     if (!sess)
       return res
@@ -1636,18 +2395,18 @@ app.delete("/sessies/:id/leerling/:lid", auth, async (req, res) => {
     await db.run(
       "DELETE FROM resultaten WHERE leerling_id = ? AND sessie_id = ?",
       lid,
-      id
+      id,
     );
     await db.run(
       "DELETE FROM leerlingen WHERE id = ? AND klas_id = ?",
       lid,
-      sess.klas_id
+      sess.klas_id,
     );
 
     res.json({ ok: true });
     // broadcast update
     broadcastSession(id).catch((e) =>
-      console.error("broadcast delete-leerling", e)
+      console.error("broadcast delete-leerling", e),
     );
   } catch (err) {
     console.error("DELETE /sessies/:id/leerling/:lid error:", err);
@@ -1662,7 +2421,7 @@ app.get("/sessies/:id/export", auth, async (req, res) => {
     const sess = await db.get(
       "SELECT * FROM sessies WHERE id = ? AND docent_id = ?",
       id,
-      req.user.id
+      req.user.id,
     );
     if (!sess)
       return res.status(404).send("sessie niet gevonden of geen rechten");
@@ -1674,13 +2433,13 @@ app.get("/sessies/:id/export", auth, async (req, res) => {
        LEFT JOIN vragen v ON v.id = r.vraag_id
        WHERE r.sessie_id = ?
        ORDER BY r.created_at ASC`,
-      id
+      id,
     );
 
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=sessie_${id}_resultaten.csv`
+      `attachment; filename=sessie_${id}_resultaten.csv`,
     );
 
     // Write CSV header
@@ -1713,7 +2472,7 @@ app.get("/sessies/:id/answer_count", auth, async (req, res) => {
     const sess = await db.get(
       "SELECT current_question_id FROM sessies WHERE id = ? AND docent_id = ?",
       id,
-      req.user.id
+      req.user.id,
     );
     if (!sess)
       return res
@@ -1723,7 +2482,7 @@ app.get("/sessies/:id/answer_count", auth, async (req, res) => {
     const row = await db.get(
       "SELECT COUNT(*) as c FROM resultaten WHERE sessie_id = ? AND vraag_id = ?",
       id,
-      sess.current_question_id
+      sess.current_question_id,
     );
     res.send(String(row.c || 0));
   } catch (err) {
@@ -1750,10 +2509,33 @@ app.post("/leerling/join", express.json(), async (req, res) => {
     const klas = await db.get("SELECT * FROM klassen WHERE klascode = ?", code);
     if (!klas) return res.status(404).json({ error: "klas not found" });
 
+    // Reject join if there is an active locked session for this klas
+    try {
+      const activeLocked = await db.get(
+        "SELECT id FROM sessies WHERE klas_id = ? AND actief = 1 AND locked = 1 LIMIT 1",
+        klas.id,
+      );
+      if (activeLocked)
+        return res.status(403).json({ error: "session locked" });
+    } catch (e) {}
+
+    // Reject join if this name is banned for this klas
+    try {
+      const ban = await db.get(
+        "SELECT id FROM banned_leerlingen WHERE klas_id = ? AND naam = ? LIMIT 1",
+        klas.id,
+        naam,
+      );
+      if (ban)
+        return res
+          .status(403)
+          .json({ error: "you are not allowed to join this klas" });
+    } catch (e) {}
+
     const r = await db.run(
       "INSERT INTO leerlingen (klas_id, naam) VALUES (?, ?)",
       klas.id,
-      naam
+      naam,
     );
     const lid = r.lastID;
 
@@ -1777,13 +2559,13 @@ app.get("/student/state", async (req, res) => {
     const leerling = await db.get(
       "SELECT id, naam FROM leerlingen WHERE id = ? AND klas_id = ?",
       leerling_id,
-      klas_id
+      klas_id,
     );
     if (!leerling) return res.status(404).json({ error: "leerling not found" });
 
     const sess = await db.get(
       "SELECT * FROM sessies WHERE klas_id = ? AND actief = 1 LIMIT 1",
-      klas_id
+      klas_id,
     );
     if (!sess) return res.json({ session_ended: true });
 
@@ -1791,7 +2573,7 @@ app.get("/student/state", async (req, res) => {
     const currentQuestion = sess.current_question_id
       ? await db.get(
           "SELECT id, vraag FROM vragen WHERE id = ?",
-          sess.current_question_id
+          sess.current_question_id,
         )
       : null;
 
@@ -1803,7 +2585,7 @@ app.get("/student/state", async (req, res) => {
         "SELECT id, status, points, antwoord_given, created_at FROM resultaten WHERE sessie_id = ? AND vraag_id = ? AND leerling_id = ?",
         session_id,
         currentQuestion.id,
-        leerling_id
+        leerling_id,
       );
       if (r) already_answered = true;
     }
@@ -1811,18 +2593,18 @@ app.get("/student/state", async (req, res) => {
     const scoreRow = await db.get(
       "SELECT COALESCE(SUM(points),0) as score FROM resultaten WHERE sessie_id = ? AND leerling_id = ?",
       session_id,
-      leerling_id
+      leerling_id,
     );
     const answerCountRow = await db.get(
       "SELECT COUNT(*) as c FROM resultaten WHERE sessie_id = ? AND leerling_id = ?",
       session_id,
-      leerling_id
+      leerling_id,
     );
 
     const recent = await db.all(
       "SELECT r.id, r.vraag_id, v.vraag as question, COALESCE(r.antwoord_given, r.antwoord) as antwoord, r.status, r.points, r.created_at FROM resultaten r LEFT JOIN vragen v ON v.id = r.vraag_id WHERE r.sessie_id = ? AND r.leerling_id = ? ORDER BY r.created_at DESC LIMIT 50",
       session_id,
-      leerling_id
+      leerling_id,
     );
 
     let all_answered = false;
@@ -1830,17 +2612,17 @@ app.get("/student/state", async (req, res) => {
     if (currentQuestion) {
       const totalStudents = await db.get(
         "SELECT COUNT(*) as c FROM leerlingen WHERE klas_id = ?",
-        klas_id
+        klas_id,
       );
       const answeredCount = await db.get(
         "SELECT COUNT(DISTINCT leerling_id) as c FROM resultaten WHERE sessie_id = ? AND vraag_id = ?",
         session_id,
-        currentQuestion.id
+        currentQuestion.id,
       );
       all_answered = (answeredCount.c || 0) >= (totalStudents.c || 0);
       const ansRow = await db.get(
         "SELECT antwoord FROM vragen WHERE id = ?",
-        currentQuestion.id
+        currentQuestion.id,
       );
       correct_answer = ansRow?.antwoord || null;
     }
@@ -1862,6 +2644,9 @@ app.get("/student/state", async (req, res) => {
       })),
       all_answered,
       correct_answer,
+      // expose toets flags to student clients
+      is_toets: sess.is_toets ? 1 : 0,
+      locked: sess.locked ? 1 : 0,
     });
   } catch (err) {
     console.error("/student/state error:", err);
@@ -1882,7 +2667,7 @@ app.post("/sessies/:id/answer", express.json(), async (req, res) => {
 
     const sess = await db.get(
       "SELECT * FROM sessies WHERE id = ? AND actief = 1",
-      id
+      id,
     );
     if (!sess) return res.status(404).json({ error: "sessie not found" });
 
@@ -1890,7 +2675,7 @@ app.post("/sessies/:id/answer", express.json(), async (req, res) => {
       "SELECT id FROM resultaten WHERE sessie_id = ? AND vraag_id = ? AND leerling_id = ?",
       id,
       vraag_id,
-      leerling_id
+      leerling_id,
     );
     if (existing)
       return res.json({ success: false, message: "already answered" });
@@ -1898,7 +2683,7 @@ app.post("/sessies/:id/answer", express.json(), async (req, res) => {
     // auto-grade: fetch correct answer and compare (loose normalizing: trim, collapse spaces, case-insensitive)
     const correctRow = await db.get(
       "SELECT antwoord FROM vragen WHERE id = ?",
-      vraag_id
+      vraag_id,
     );
     const normalize = (s) =>
       String(s || "")
@@ -1925,7 +2710,7 @@ app.post("/sessies/:id/answer", express.json(), async (req, res) => {
       antwoord,
       antwoord,
       status,
-      points
+      points,
     );
 
     // notify teachers and students
@@ -1955,7 +2740,7 @@ app.post("/status-update", express.json(), async (req, res) => {
         try {
           const sessRow = await db.get(
             "SELECT id FROM sessies WHERE klas_id = ? AND actief = 1",
-            klas_id
+            klas_id,
           );
           if (sessRow && sessRow.id) {
             broadcastSession(sessRow.id).catch(() => {});
@@ -2041,6 +2826,13 @@ server.on("error", (err) => {
 
 // Graceful shutdown
 process.on("SIGINT", () => {
+  console.log("Shutdown signal received");
+  server.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
+});
+process.on("SIGTERM", () => {
   console.log("Shutdown signal received");
   server.close(() => {
     console.log("Server closed");

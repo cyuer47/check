@@ -1,10 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
   <head>
     <meta charset="utf-8" />
     <title>Dashboard</title>
     <link rel="stylesheet" href="assets/css/styles.css" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/jdenticon@3.2.0/dist/jdenticon.min.js"></script>
   </head>
   <body>
     <div class="container">
@@ -17,7 +18,13 @@
       >
         <div class="chip">Overhoorder • Docent</div>
         <div class="profile-container">
-          <button class="profile-btn" onclick="toggleProfileMenu()">
+          <button
+            class="profile-btn"
+            id="profileBtn"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="profileMenu"
+          >
             <img id="avatar" src="" alt="Avatar" class="profile-avatar" />
             <span id="profile-name" class="profile-name"></span>
             <svg
@@ -26,15 +33,28 @@
               height="20"
               viewBox="0 0 24 24"
               width="20"
-              fill="#1f1f1f"
+              fill="currentColor"
+              aria-hidden="true"
             >
               <path d="M7 10l5 5 5-5H7z" />
             </svg>
           </button>
-          <div class="profile-menu">
-            <a href="profile.html">Mijn profiel</a>
-            <a href="settings.html">Instellingen</a>
-            <a href="#" id="logout-link" class="logout-btn">Uitloggen</a>
+          <div
+            class="profile-menu"
+            id="profileMenu"
+            role="menu"
+            aria-labelledby="profileBtn"
+          >
+            <div class="divider" aria-hidden="true"></div>
+            <a href="docent_settings.html" role="menuitem">Instellingen</a>
+            <a
+              href="#"
+              id="logout-link"
+              class="logout logout-btn"
+              role="menuitem"
+              >Uitloggen</a
+            >
+            <div class="divider" aria-hidden="true"></div>
           </div>
         </div>
       </div>
@@ -113,12 +133,28 @@
 
           document.getElementById("profile-name").textContent =
             j.docent?.naam || j.docent?.email || "Docent";
-          document.getElementById("avatar").src =
-            "get_avatar.php?file=" +
-            encodeURIComponent(j.docent?.avatar || "") +
-            "&seed=" +
-            encodeURIComponent(j.docent?.naam || "") +
-            "&size=48";
+          const avatarEl = document.getElementById("avatar");
+          if (j.docent?.avatar) {
+            avatarEl.src = j.docent.avatar;
+          } else {
+            const seed =
+              j.docent?.email || j.docent?.naam || String(Date.now());
+            const svg = jdenticon.toSvg(seed, 48);
+            const svg64 = btoa(unescape(encodeURIComponent(svg)));
+            avatarEl.src = "data:image/svg+xml;base64," + svg64;
+          }
+
+          // populate menu header avatar/name/email if present
+          try {
+            const menuAvatar = document.getElementById("menuAvatar");
+            const menuName = document.querySelector(".profile-menu-name");
+            const menuEmail = document.querySelector(".profile-menu-email");
+            if (menuAvatar) menuAvatar.src = avatarEl.src;
+            if (menuName)
+              menuName.textContent =
+                j.docent?.naam || j.docent?.email || "Docent";
+            if (menuEmail) menuEmail.textContent = j.docent?.email || "";
+          } catch (e) {}
 
           // klassen
           const kl = document.getElementById("klassenList");
@@ -131,9 +167,9 @@
               const li = document.createElement("li");
               li.style.margin = "10px 0";
               li.innerHTML = `<strong>${escapeHtml(
-                k.naam
+                k.naam,
               )}</strong><div class="helper">Klascode: ${escapeHtml(
-                k.klascode
+                k.klascode,
               )} - Vak: ${escapeHtml(k.vak || "")}</div>`;
               const div = document.createElement("div");
               div.style.marginTop = "8px";
@@ -157,9 +193,9 @@
               const li = document.createElement("li");
               li.style.margin = "10px 0";
               li.innerHTML = `<strong>${escapeHtml(
-                b.naam
+                b.naam,
               )}</strong><div class="helper">${escapeHtml(
-                b.beschrijving || ""
+                b.beschrijving || "",
               )}</div>`;
               const div = document.createElement("div");
               div.style.marginTop = "8px";
@@ -178,7 +214,7 @@
                 div.innerHTML = `<a class="btn-primary" href="gebruik_bibliotheek.php?id=${b.id}">Toevoegen aan klas</a>`;
               else
                 div.innerHTML = `<button class="btn-secondary" disabled title="Licentie vereist">Licentie vereist (${escapeHtml(
-                  lic_type
+                  lic_type,
                 )})</button>`;
               li.appendChild(div);
               ul.appendChild(li);
@@ -198,9 +234,9 @@
               const li = document.createElement("li");
               li.style.margin = "10px 0";
               li.innerHTML = `<strong>${escapeHtml(
-                b.titel
+                b.titel,
               )}</strong><div class="helper">${escapeHtml(
-                b.omschrijving || ""
+                b.omschrijving || "",
               )}</div>`;
               const div = document.createElement("div");
               div.style.marginTop = "8px";
@@ -229,9 +265,9 @@
             j.licenties.forEach((L) => {
               const li = document.createElement("li");
               li.innerHTML = `<strong>${escapeHtml(
-                L.type
+                L.type,
               )}</strong> - vervalt op ${escapeHtml(
-                L.vervalt_op || "geen vervaldatum"
+                L.vervalt_op || "geen vervaldatum",
               )}`;
               ul2.appendChild(li);
             });
@@ -254,7 +290,7 @@
               ">": "&gt;",
               '"': "&quot;",
               "'": "&#39;",
-            }[c])
+            })[c],
         );
       }
 
@@ -346,16 +382,102 @@
         }, 250);
       });
 
-      // profile menu
-      function toggleProfileMenu() {
+      // profile menu: improved accessibility + keyboard navigation
+      (function initProfileMenu() {
         const container = document.querySelector(".profile-container");
-        container.classList.toggle("active");
-      }
-      document.addEventListener("click", function (e) {
-        const container = document.querySelector(".profile-container");
-        if (container && !container.contains(e.target))
+        const btn = document.getElementById("profileBtn");
+        const menu = document.getElementById("profileMenu");
+        if (!container || !btn || !menu) return;
+
+        function openMenu() {
+          container.classList.add("active");
+          btn.setAttribute("aria-expanded", "true");
+          // focus first item
+          const first = menu.querySelector('[role="menuitem"]');
+          if (first) first.focus();
+        }
+        function closeMenu(opts = { focusButton: true }) {
           container.classList.remove("active");
-      });
+          btn.setAttribute("aria-expanded", "false");
+          // only move focus back to the profile button when desired
+          if (opts && opts.focusButton) {
+            try {
+              btn.focus();
+            } catch (e) {}
+          }
+        }
+
+        // populate header (menu avatar/name/email) when opening
+        function populateMenuHeader() {
+          try {
+            const menuAvatar = document.getElementById("menuAvatar");
+            const menuName = document.querySelector(".profile-menu-name");
+            const menuEmail = document.querySelector(".profile-menu-email");
+            const avatar = document.getElementById("avatar");
+            if (menuAvatar && avatar) menuAvatar.src = avatar.src;
+            if (menuName)
+              menuName.textContent =
+                document.getElementById("profile-name").textContent || "Docent";
+            // menuEmail is set by fetchDashboard when profile loads
+          } catch (e) {}
+        }
+
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (container.classList.contains("active")) closeMenu();
+          else {
+            populateMenuHeader();
+            openMenu();
+          }
+        });
+
+        // close on outside click
+        document.addEventListener("click", (e) => {
+          if (!container.contains(e.target)) closeMenu({ focusButton: false });
+        });
+
+        // close menu when a menuitem is clicked
+        menu.addEventListener("click", (e) => {
+          const mi = e.target.closest('[role="menuitem"]');
+          if (mi) {
+            // allow default navigation, but close the menu after short delay
+            setTimeout(() => closeMenu({ focusButton: false }), 50);
+          }
+        });
+
+        // keyboard handling
+        btn.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            populateMenuHeader();
+            openMenu();
+          }
+        });
+        menu.addEventListener("keydown", (e) => {
+          const items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
+          const idx = items.indexOf(document.activeElement);
+          if (e.key === "Escape") {
+            e.preventDefault();
+            closeMenu();
+            return;
+          }
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            const next = items[idx + 1] || items[0];
+            next && next.focus();
+          }
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            const prev = items[idx - 1] || items[items.length - 1];
+            prev && prev.focus();
+          }
+        });
+
+        // ensure menu items are focusable
+        menu.querySelectorAll('[role="menuitem"]').forEach((a) => {
+          a.setAttribute("tabindex", "-1");
+        });
+      })();
 
       // logout
       document.getElementById("logout-link").addEventListener("click", () => {

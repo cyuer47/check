@@ -24,7 +24,13 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    Segoe UI,
+    Roboto,
+    Arial,
+    sans-serif;
   background: linear-gradient(135deg, #f5f2ff, #ffe6f1);
   min-height: 100%;
   color: var(--on-surface);
@@ -392,7 +398,9 @@ textarea:focus {
   opacity: 0;
   transform: translateY(-10px);
   pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .profile-container.active .profile-menu {
@@ -406,7 +414,9 @@ textarea:focus {
   text-decoration: none;
   color: #1f1f1f;
   font-size: 14px;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .profile-menu a:hover {
@@ -635,7 +645,7 @@ textarea:focus {
   transform: translateY(-2px);
 }
 
-.logout-btn {
+/* .logout-btn {
   position: fixed;
   top: 20px;
   right: 20px;
@@ -649,7 +659,7 @@ textarea:focus {
 }
 .logout-btn:hover {
   background: #faf7ff;
-}
+} */
 
 @media (max-width: 520px) {
   .question-card {
