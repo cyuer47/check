@@ -378,6 +378,10 @@
           // start presence (heartbeat + immediate status)
           sendStatus("actief");
           startPresenceHeartbeat();
+          // Start SSE stream immediately after login
+          if (j.session_id) {
+            startSSEStream(j.session_id);
+          }
         } catch (err) {
           em.textContent = "Netwerkfout";
           em.style.display = "";
@@ -702,10 +706,8 @@
 
       function startSSEStream(sessionId) {
         if (sseStream) return;
-        const token = localStorage.getItem("token");
-        const url = token
-          ? `/sessies/${sessionId}/stream?token=${encodeURIComponent(token)}`
-          : `/sessies/${sessionId}/stream`;
+        // Students don't need token for SSE
+        const url = `/sessies/${sessionId}/stream`;
         sseStream = new EventSource(url);
 
         sseStream.addEventListener("open", () => {
@@ -717,6 +719,7 @@
         sseStream.addEventListener("session", (e) => {
           try {
             const data = JSON.parse(e.data);
+            console.log("SSE session event:", data);
             // teacher clients receive full payload; student clients can refetch
             updateAppState();
           } catch (err) {
@@ -726,10 +729,30 @@
 
         sseStream.addEventListener("update", (e) => {
           try {
+            console.log("SSE update event:", e.data);
             // update event triggers a fetch for current state
             updateAppState();
           } catch (err) {
             console.error("SSE update parse error:", err);
+          }
+        });
+
+        // Also listen for question-specific events
+        sseStream.addEventListener("question", (e) => {
+          try {
+            console.log("SSE question event:", e.data);
+            updateAppState();
+          } catch (err) {
+            console.error("SSE question parse error:", err);
+          }
+        });
+
+        sseStream.addEventListener("answer", (e) => {
+          try {
+            console.log("SSE answer event:", e.data);
+            updateAppState();
+          } catch (err) {
+            console.error("SSE answer parse error:", err);
           }
         });
 
@@ -760,8 +783,15 @@
         if (leerlingId && klasId) {
           showMain();
           updateStatus("actief");
-          updateAppState();
-          // SSE stream will be started after getting session ID from first update
+          updateAppState().then(() => {
+            // After getting state, start SSE if we have a session
+            if (appState.currentSessionId && !sseStream) {
+              startSSEStream(appState.currentSessionId);
+            }
+          });
+          // start presence (heartbeat + immediate status)
+          sendStatus("actief");
+          startPresenceHeartbeat();
         } else {
           showJoin();
         }

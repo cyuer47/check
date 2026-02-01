@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
   <head>
     <meta charset="utf-8" />
     <title>Vragen</title>
     <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="icon" type="image/x-icon" href="assets/img/logo2.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       .modal {
@@ -271,7 +272,7 @@
           const statusArea = document.getElementById("status-area");
           if (sess.current_question_id && data.currentQuestion) {
             statusArea.innerHTML = `<div class="current-question"><h4>Huidige vraag voor alle leerlingen:</h4><p style='font-size:18px;font-weight:bold;margin:10px 0;'>${escapeHtml(
-              data.currentQuestion.vraag
+              data.currentQuestion.vraag,
             )} <span id='answerCount' style='color:#555'>(Antwoorden: ${
               data.answerCount
             })</span></p><p class='helper'>Alle leerlingen kunnen nu deze vraag beantwoorden.</p></div>`;
@@ -428,8 +429,8 @@
             .map(
               (r) =>
                 `<div class="score-item"><div>${escapeHtml(
-                  r.naam
-                )}</div><div style="font-weight:bold">${r.points}</div></div>`
+                  r.naam,
+                )}</div><div style="font-weight:bold">${r.points}</div></div>`,
             )
             .join("");
           container.innerHTML = html;
@@ -461,20 +462,20 @@
                 ? `<button class="btn-secondary" onclick='openModal(${
                     r.id
                   }, ${JSON.stringify(r.antwoord)}, ${JSON.stringify(
-                    r.vraag
+                    r.vraag,
                   )})'>Beoordeel</button>`
                 : "";
               const statusLabel = needsReview
                 ? '<strong style="color:#d48806">Onbeoordeeld</strong>'
                 : `<span style="color:#4caf50">${escapeHtml(
-                    r.status || "beoordeeld"
+                    r.status || "beoordeeld",
                   )}</span>`;
               return `<div style="padding:8px;border-bottom:1px solid #eee"><div><strong>${escapeHtml(
-                r.leerling
+                r.leerling,
               )}</strong> <span class="small-muted">(${
                 r.created_at
               })</span></div><div>${escapeHtml(
-                r.antwoord
+                r.antwoord,
               )}</div><div style="margin-top:6px">Status: ${statusLabel} ${gradeBtn}</div></div>`;
             })
             .join("");
@@ -505,14 +506,14 @@
             const dotClass = online
               ? "presence-dot presence-on"
               : l.last_seen
-              ? "presence-dot presence-away"
-              : "presence-dot presence-off";
+                ? "presence-dot presence-away"
+                : "presence-dot presence-off";
             const nameClass = !focused ? "student-away" : "student-focused";
             const lastSeenText = l.last_seen
               ? ` (laatst: ${new Date(l.last_seen).toLocaleTimeString()})`
               : "";
             return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #eee"><div><span class='${dotClass}'></span><span class='${nameClass}'>${escapeHtml(
-              l.naam
+              l.naam,
             )}</span><span class='last-seen'>${lastSeenText}</span></div><div><button class="btn-danger" onclick="deleteStudent(${
               l.id
             })">Verwijder</button></div></div>`;
@@ -558,7 +559,7 @@
               (r) =>
                 `<tr><td style="padding:6px;font-weight:bold;width:40%">${
                   r[0]
-                }</td><td style="padding:6px">${r[1] || ""}</td></tr>`
+                }</td><td style="padding:6px">${r[1] || ""}</td></tr>`,
             )
             .join("") +
           "</table>";
@@ -663,7 +664,7 @@
               ">": "&gt;",
               '"': "&quot;",
               "'": "&#39;",
-            }[c])
+            })[c],
         );
       }
 
@@ -683,7 +684,7 @@
           const statusArea = document.getElementById("status-area");
           if (sess.current_question_id && data.currentQuestion) {
             statusArea.innerHTML = `<div class="current-question"><h4>Huidige vraag voor alle leerlingen:</h4><p style='font-size:18px;font-weight:bold;margin:10px 0;'>${escapeHtml(
-              data.currentQuestion.vraag
+              data.currentQuestion.vraag,
             )} <span id='answerCount' style='color:#555'>(Antwoorden: ${
               data.answerCount
             })</span></p><p class='helper'>Alle leerlingen kunnen nu deze vraag beantwoorden.</p></div>`;
@@ -716,14 +717,14 @@
               .map(
                 (r) =>
                   `<div class="score-item"><div>${escapeHtml(
-                    r.naam
-                  )}</div><div style="font-weight:bold">${r.points}</div></div>`
+                    r.naam,
+                  )}</div><div style="font-weight:bold">${r.points}</div></div>`,
               )
               .join("");
 
           // recent answers
           const raContainer = document.getElementById(
-            "recent-answers-container"
+            "recent-answers-container",
           );
           if (!data.recentAnswers || data.recentAnswers.length === 0)
             raContainer.innerHTML =
@@ -736,20 +737,20 @@
                   ? `<button class="btn-secondary" onclick='openModal(${
                       r.id
                     }, ${JSON.stringify(r.antwoord)}, ${JSON.stringify(
-                      r.vraag
+                      r.vraag,
                     )})'>Beoordeel</button>`
                   : "";
                 const statusLabel = needsReview
                   ? '<strong style="color:#d48806">Onbeoordeeld</strong>'
                   : `<span style="color:#4caf50">${escapeHtml(
-                      r.status || "beoordeeld"
+                      r.status || "beoordeeld",
                     )}</span>`;
                 return `<div style="padding:8px;border-bottom:1px solid #eee"><div><strong>${escapeHtml(
-                  r.leerling
+                  r.leerling,
                 )}</strong> <span class="small-muted">(${
                   r.created_at
                 })</span></div><div>${escapeHtml(
-                  r.antwoord
+                  r.antwoord,
                 )}</div><div style="margin-top:6px">Status: ${statusLabel} ${gradeBtn}</div></div>`;
               })
               .join("");
@@ -773,24 +774,96 @@
         }
       }
 
-      // open SSE
-      const es = new EventSource(
-        "/sessies/" + sessionId + "/stream?token=" + encodeURIComponent(token)
-      );
-      es.addEventListener("open", () => {
-        console.log("SSE open");
-      });
-      es.addEventListener("error", (e) => {
-        console.error("SSE error", e);
-      });
-      es.addEventListener("session", (e) => {
-        try {
-          const d = JSON.parse(e.data);
-          applySessionData(d);
-        } catch (err) {
-          console.error("SSE parse", err);
+      // open SSE with proper error handling and reconnection
+      let es = null;
+      let reconnectAttempts = 0;
+      const maxReconnectAttempts = 5;
+      
+      function startSSE() {
+        if (es) {
+          es.close();
         }
-      });
+        
+        es = new EventSource(
+          "/sessies/" + sessionId + "/stream?token=" + encodeURIComponent(token),
+        );
+        
+        es.addEventListener("open", () => {
+          console.log("SSE open");
+          reconnectAttempts = 0;
+        });
+        
+        es.addEventListener("error", (e) => {
+          console.error("SSE error", e);
+          if (es.readyState === EventSource.CLOSED) {
+            reconnectAttempts++;
+            if (reconnectAttempts <= maxReconnectAttempts) {
+              console.log(`SSE reconnect attempt ${reconnectAttempts}/${maxReconnectAttempts}`);
+              setTimeout(() => startSSE(), 3000 * reconnectAttempts);
+            } else {
+              console.error("Max SSE reconnect attempts reached");
+            }
+          }
+        });
+        
+        es.addEventListener("session", (e) => {
+          try {
+            const d = JSON.parse(e.data);
+            console.log("SSE session event:", d);
+            applySessionData(d);
+          } catch (err) {
+            console.error("SSE parse", err);
+          }
+        });
+        
+        // Listen for other event types for better live updates
+        es.addEventListener("update", (e) => {
+          try {
+            console.log("SSE update event:", e.data);
+            loadSession();
+            refreshRecentAnswers();
+            refreshScoreboard();
+            refreshStudentList();
+          } catch (err) {
+            console.error("SSE update parse", err);
+          }
+        });
+        
+        es.addEventListener("question", (e) => {
+          try {
+            console.log("SSE question event:", e.data);
+            loadSession();
+          } catch (err) {
+            console.error("SSE question parse", err);
+          }
+        });
+        
+        es.addEventListener("answer", (e) => {
+          try {
+            console.log("SSE answer event:", e.data);
+            refreshRecentAnswers();
+            refreshScoreboard();
+          } catch (err) {
+            console.error("SSE answer parse", err);
+          }
+        });
+      }
+      
+      startSSE();
+
+      // Also perform an immediate initial load so the page is populated when opened
+      // (some SSE servers may not send the current state immediately)
+      (async () => {
+        try {
+          await loadSession();
+          await refreshRecentAnswers();
+          await refreshScoreboard();
+          await refreshStudentList();
+        } catch (err) {
+          console.error("Initial load failed", err);
+        }
+      })();
+
       // done — no polling any more
     </script>
   </body>

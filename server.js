@@ -2539,7 +2539,19 @@ app.post("/leerling/join", express.json(), async (req, res) => {
     );
     const lid = r.lastID;
 
-    res.json({ ok: true, leerling_id: lid, klas_id: klas.id, klas_code: code });
+    // Check if there's an active session for this klas
+    let session_id = null;
+    try {
+      const activeSession = await db.get(
+        "SELECT id FROM sessies WHERE klas_id = ? AND actief = 1 LIMIT 1",
+        klas.id
+      );
+      if (activeSession) {
+        session_id = activeSession.id;
+      }
+    } catch (e) {}
+
+    res.json({ ok: true, leerling_id: lid, klas_id: klas.id, klas_code: code, session_id });
   } catch (err) {
     console.error("/leerling/join error:", err);
     res.status(500).json({ error: "server error" });
