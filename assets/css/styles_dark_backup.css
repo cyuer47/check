@@ -1,4 +1,4 @@
-/* Material 3 Expressive Light Theme Only */
+/* Material 3 Expressive Theme - Enhanced Color Combinations */
 @import url('theme.css');
 
 /* Animation Variables */
@@ -32,7 +32,6 @@
   --gradient-tertiary: linear-gradient(135deg, var(--tertiary) 0%, color-mix(in srgb, var(--tertiary) 85%, var(--primary)) 100%);
   --gradient-surface: linear-gradient(135deg, var(--surface-container) 0%, var(--surface) 100%);
   --gradient-elevated: linear-gradient(135deg, var(--surface-container-high) 0%, var(--surface-container) 100%);
-  --gradient-background: linear-gradient(135deg, #F8F4FF 0%, #EADDFF 25%, #F3EDF7 50%, #E8DEF8 75%, #F8F4FF 100%);
 }
 
 /* Global Styles */
@@ -48,13 +47,12 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Roboto Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  background: var(--gradient-background);
+  background: var(--background);
   color: var(--on-background);
   min-height: 100vh;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-attachment: fixed;
 }
 
 /* Container */
@@ -76,6 +74,7 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  text-fill-color: transparent;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -447,153 +446,6 @@ label {
   border-left-color: var(--secondary);
 }
 
-/* Profile Container and Dropdown */
-.profile-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.profile-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  background: var(--gradient-surface);
-  border: 1px solid var(--outline);
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: all var(--animation-normal);
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--on-surface);
-  box-shadow: var(--shadow-1);
-}
-
-.profile-btn:hover {
-  background: var(--gradient-elevated);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-2);
-}
-
-.profile-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--primary);
-}
-
-.profile-name {
-  font-weight: 500;
-  color: var(--on-surface);
-}
-
-.dropdown-arrow {
-  transition: transform var(--animation-normal);
-  color: var(--on-surface-variant);
-}
-
-.profile-container.active .dropdown-arrow {
-  transform: rotate(180deg);
-}
-
-.profile-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: var(--surface-container);
-  border: 1px solid var(--outline);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-4);
-  min-width: 280px;
-  z-index: 1000;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-8px);
-  transition: all var(--animation-normal);
-  backdrop-filter: blur(10px);
-}
-
-.profile-container.active .profile-menu {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.menu-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid var(--outline-variant);
-  background: var(--gradient-surface);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-}
-
-.menu-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--primary);
-  background: var(--surface-variant);
-}
-
-.menu-info {
-  flex: 1;
-}
-
-.menu-name {
-  font-weight: 500;
-  color: var(--on-surface);
-  font-size: 14px;
-}
-
-.menu-email {
-  font-size: 12px;
-  color: var(--on-surface-variant);
-  margin-top: 2px;
-}
-
-.profile-menu a {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  color: var(--on-surface);
-  text-decoration: none;
-  transition: all var(--animation-normal);
-  font-size: 14px;
-  gap: 12px;
-  border: none;
-  background: transparent;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-}
-
-.profile-menu a:hover {
-  background: var(--gradient-surface);
-  color: var(--primary);
-}
-
-.profile-menu a.logout {
-  color: var(--error);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-}
-
-.profile-menu a.logout:hover {
-  background: color-mix(in srgb, var(--error) 8%, transparent);
-  color: var(--error);
-}
-
-.divider {
-  height: 1px;
-  background: var(--outline-variant);
-  margin: 0;
-  border: none;
-}
-
 /* Enhanced Animations */
 @keyframes fadeIn {
   from { 
@@ -695,12 +547,9 @@ label {
   animation: fadeIn var(--animation-emphasized);
 }
 
-/* Alternative: Add unique view-transition-names dynamically */
-.card:nth-child(1) { view-transition-name: card-1; }
-.card:nth-child(2) { view-transition-name: card-2; }
-.card:nth-child(3) { view-transition-name: card-3; }
-.card:nth-child(4) { view-transition-name: card-4; }
-.card:nth-child(5) { view-transition-name: card-5; }
+.card {
+  view-transition-name: card;
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -719,11 +568,6 @@ label {
   .btn-primary, .btn-secondary, .btn-text, .btn-danger {
     padding: 12px 20px;
     font-size: 13px;
-  }
-  
-  .profile-menu {
-    right: -8px;
-    min-width: 260px;
   }
 }
 
@@ -762,13 +606,60 @@ label {
   border-radius: var(--radius-xs);
 }
 
-/* Spinner */
-.spinner {
-  border: 4px solid var(--surface-container-low);
-  border-top: 4px solid var(--primary);
-  border-radius: 50%;
+/* Theme Toggle Button (only show when needed) */
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: var(--gradient-surface);
+  border: 2px solid var(--outline);
+  border-radius: var(--radius-full);
+  padding: 12px;
+  cursor: pointer;
+  transition: all var(--animation-normal);
+  box-shadow: var(--shadow-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 48px;
   height: 48px;
-  animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
-  margin: 20px auto;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-4);
+  background: var(--gradient-primary);
+  border-color: var(--primary);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
+}
+
+.theme-toggle svg {
+  width: 24px;
+  height: 24px;
+  fill: var(--on-surface);
+  transition: all var(--animation-normal);
+}
+
+.theme-toggle:hover svg {
+  fill: var(--on-primary);
+}
+
+/* Hide theme toggle by default */
+.theme-toggle {
+  display: none;
+}
+
+/* Show theme toggle only on specific pages */
+body.show-theme-toggle .theme-toggle {
+  display: flex;
+}
+
+/* Prevent transitions on theme toggle button itself */
+.theme-toggle,
+.theme-toggle * {
+  transition: none !important;
 }

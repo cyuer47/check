@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <title>Dashboard</title>
     <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <script src="https://cdn.jsdelivr.net/npm/jdenticon@3.2.0/dist/jdenticon.min.js"></script>
   </head>
@@ -16,28 +18,21 @@
           align-items: center;
         "
       >
-        <div class="chip">Overhoorder • Docent</div>
+        <div class="chip">
+          <span class="material-icons" style="font-size: 16px; margin-right: 4px;">school</span>
+          Overhoorder
+        </div>
         <div class="profile-container">
           <button
             class="profile-btn"
             id="profileBtn"
-            aria-haspopup="menu"
+            aria-haspopup="true"
             aria-expanded="false"
             aria-controls="profileMenu"
           >
             <img id="avatar" src="" alt="Avatar" class="profile-avatar" />
             <span id="profile-name" class="profile-name"></span>
-            <svg
-              class="dropdown-arrow"
-              xmlns="http://www.w3.org/2000/svg"
-              height="20"
-              viewBox="0 0 24 24"
-              width="20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d="M7 10l5 5 5-5H7z" />
-            </svg>
+            <span class="material-icons dropdown-arrow">arrow_drop_down</span>
           </button>
           <div
             class="profile-menu"
@@ -45,16 +40,31 @@
             role="menu"
             aria-labelledby="profileBtn"
           >
+            <div class="menu-header">
+              <img id="menu-avatar" src="" alt="Avatar" class="menu-avatar" />
+              <div class="menu-info">
+                <div id="menu-name" class="menu-name"></div>
+                <div id="menu-email" class="menu-email"></div>
+              </div>
+            </div>
             <div class="divider" aria-hidden="true"></div>
-            <a href="docent_settings.html" role="menuitem">Instellingen</a>
+            <a href="docent_settings.html" role="menuitem">
+              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">settings</span>
+              Instellingen
+            </a>
+            <a href="profile.html" role="menuitem">
+              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">person</span>
+              Profiel
+            </a>
             <a
               href="#"
               id="logout-link"
               class="logout logout-btn"
               role="menuitem"
-              >Uitloggen</a
             >
-            <div class="divider" aria-hidden="true"></div>
+              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">logout</span>
+              Uitloggen
+            </a>
           </div>
         </div>
       </div>
@@ -62,13 +72,19 @@
       <h1 class="app-title">Dashboard</h1>
 
       <div class="card">
-        <h3>Nieuwe klas</h3>
+        <h3>
+          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">add_circle</span>
+          Nieuwe klas
+        </h3>
         <form id="createKlasForm">
           <label>Klasnaam</label
           ><input name="klas_naam" id="klas_naam" required />
           <label>Vak (optioneel)</label><input name="vak" id="vak" />
           <div style="margin-top: 12px">
-            <button class="btn-primary" type="submit">Klas aanmaken</button>
+            <button class="btn-primary" type="submit">
+              <span class="material-icons" style="font-size: 16px; margin-right: 6px;">add</span>
+              Klas aanmaken
+            </button>
           </div>
         </form>
       </div>
@@ -76,14 +92,20 @@
       <div style="height: 16px"></div>
 
       <div class="card">
-        <h3>Uw klassen</h3>
+        <h3>
+          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">class</span>
+          Uw klassen
+        </h3>
         <div id="klassenList"></div>
       </div>
 
       <div style="height: 16px"></div>
 
       <div class="card">
-        <h3>Vragenlijstbibliotheek</h3>
+        <h3>
+          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">library_books</span>
+          Vragenlijstbibliotheek
+        </h3>
         <p class="helper">
           Gebruik bestaande vragenlijsten of voeg ze toe aan je klas.
         </p>
@@ -93,25 +115,24 @@
       <div style="height: 16px"></div>
 
       <div class="card">
-        <h3>Boekenlicenties</h3>
+        <h3>
+          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">book</span>
+          Boekenlicenties
+        </h3>
         <div id="boekenList"></div>
       </div>
 
       <div style="height: 16px"></div>
 
       <div class="card">
-        <h3>Licenties</h3>
+        <h3>
+          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">verified</span>
+          Licenties
+        </h3>
         <div id="licentiesList"></div>
       </div>
 
       <div style="height: 16px"></div>
-
-      <div class="card">
-        <h3>Zoeken</h3>
-        <p class="helper">Zoek naar elk publieke profiel!</p>
-        <input type="text" id="search" placeholder="Zoek een docent" />
-        <ul id="results"></ul>
-      </div>
     </div>
 
     <script>
@@ -350,38 +371,6 @@
         }
       }
 
-      // search
-      let searchTimer;
-      document.getElementById("search").addEventListener("input", (e) => {
-        const q = e.target.value.trim();
-        const ul = document.getElementById("results");
-        ul.innerHTML = "";
-        if (!q) return;
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(async () => {
-          try {
-            const res = await fetch("/search?q=" + encodeURIComponent(q));
-            if (!res.ok) throw new Error();
-            const data = await res.json();
-            ul.innerHTML = "";
-            if (!data || data.length === 0) {
-              ul.innerHTML = "<li>Geen resultaten gevonden.</li>";
-              return;
-            }
-            data.forEach((p) => {
-              const li = document.createElement("li");
-              const a = document.createElement("a");
-              a.href = "profile.php?id=" + p.id;
-              a.textContent = `${p.naam} (${p.badge || ""})`;
-              li.appendChild(a);
-              ul.appendChild(li);
-            });
-          } catch (err) {
-            console.error(err);
-          }
-        }, 250);
-      });
-
       // profile menu: improved accessibility + keyboard navigation
       (function initProfileMenu() {
         const container = document.querySelector(".profile-container");
@@ -410,16 +399,27 @@
         // populate header (menu avatar/name/email) when opening
         function populateMenuHeader() {
           try {
-            const menuAvatar = document.getElementById("menuAvatar");
-            const menuName = document.querySelector(".profile-menu-name");
-            const menuEmail = document.querySelector(".profile-menu-email");
+            const menuAvatar = document.getElementById("menu-avatar");
+            const menuName = document.getElementById("menu-name");
+            const menuEmail = document.getElementById("menu-email");
             const avatar = document.getElementById("avatar");
-            if (menuAvatar && avatar) menuAvatar.src = avatar.src;
-            if (menuName)
-              menuName.textContent =
-                document.getElementById("profile-name").textContent || "Docent";
-            // menuEmail is set by fetchDashboard when profile loads
-          } catch (e) {}
+            const profileName = document.getElementById("profile-name");
+            
+            if (menuAvatar && avatar && avatar.src) {
+              menuAvatar.src = avatar.src;
+            } else {
+              // Fallback to default avatar
+              menuAvatar.src = "assets/img/logo2.png";
+            }
+            
+            if (menuName && profileName) {
+              menuName.textContent = profileName.textContent || "Docent";
+            }
+            
+            // Email is set by fetchDashboard when profile loads
+          } catch (e) {
+            console.error('Error populating menu header:', e);
+          }
         }
 
         btn.addEventListener("click", (e) => {

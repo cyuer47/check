@@ -20,7 +20,8 @@
     { "name": "docent", "description": "Endpoints voor docenten" },
     { "name": "sessie", "description": "Sessies en real-time" },
     { "name": "vragenlijst", "description": "Vragenlijsten en vragen" },
-    { "name": "leerling", "description": "Leerlingenbeheer" }
+    { "name": "leerling", "description": "Leerlingenbeheer" },
+    { "name": "license", "description": "Licentie management en monitoring" }
   ],
   "paths": {
     "/register": {
@@ -600,6 +601,30 @@
       "properties": {
         "success": { "type": "boolean" },
         "message": { "type": "string" }
+      }
+    },
+    "LicenseInfo": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "docent_id": { "type": "integer" },
+        "klas_id": { "type": "integer" },
+        "actief": { "type": "boolean" },
+        "vervalt_op": { "type": "string", "format": "date" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "days_until_expiry": { "type": "integer" },
+        "klas_naam": { "type": "string" },
+        "klascode": { "type": "string" }
+      }
+    },
+    "LicenseStats": {
+      "type": "object",
+      "properties": {
+        "docent_naam": { "type": "string" },
+        "total_licenses": { "type": "integer" },
+        "active_licenses": { "type": "integer" },
+        "assigned_licenses": { "type": "integer" },
+        "unassigned_licenses": { "type": "integer" }
       }
     }
   }

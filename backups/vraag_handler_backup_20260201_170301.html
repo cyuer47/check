@@ -6,10 +6,7 @@
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="icon" type="image/x-icon" href="assets/img/logo2.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-      /* Enhanced teacher page styling with Material 3 Dark Purple */
       .modal {
         display: none;
         position: fixed;
@@ -19,61 +16,35 @@
         width: 100%;
         height: 100%;
         overflow: auto;
-        background-color: var(--scrim);
+        background-color: rgba(0, 0, 0, 0.6);
         animation: fadeIn var(--animation-normal);
       }
-      
       .modal-content {
-        background-color: var(--surface-container);
-        margin: 10% auto;
-        padding: 32px;
-        border-radius: var(--radius-xl);
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border-radius: 8px;
         width: 90%;
-        max-width: 480px;
-        box-shadow: var(--shadow-5);
+        max-width: 420px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         text-align: center;
         animation: scaleIn var(--animation-bounce);
-        color: var(--on-surface);
-        border: 1px solid var(--outline-variant);
       }
-      
-      .modal-close {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: var(--on-surface-variant);
-        cursor: pointer;
-        padding: 8px;
-        border-radius: var(--radius-full);
-        transition: all var(--animation-normal);
-      }
-      
-      .modal-close:hover {
-        background: var(--surface-container-high);
-        color: var(--on-surface);
-      }
-      
       .modal-buttons {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        margin-top: 24px;
+        gap: 10px;
+        margin-top: 20px;
       }
-      
       .modal-buttons button {
-        padding: 16px 24px;
+        padding: 12px;
         font-size: 16px;
-        border-radius: var(--radius-lg);
+        border-radius: 20px;
         border: none;
         cursor: pointer;
-        transition: all var(--animation-normal);
+        transition: all var(--animation-fast);
         position: relative;
         overflow: hidden;
-        font-weight: 500;
-        min-height: 48px;
       }
       
       .modal-buttons button::before {
@@ -83,15 +54,15 @@
         left: 50%;
         width: 0;
         height: 0;
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.3);
         border-radius: 50%;
         transform: translate(-50%, -50%);
-        transition: width var(--animation-emphasized), height var(--animation-emphasized);
+        transition: width var(--animation-normal), height var(--animation-normal);
       }
       
       .modal-buttons button:hover {
         transform: translateY(-2px);
-        box-shadow: var(--shadow-3);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
       }
       
       .modal-buttons button:active::before {
@@ -100,30 +71,25 @@
       }
       
       .btn-good {
-        background: var(--tertiary);
-        color: var(--on-tertiary);
+        background: #4caf50;
+        color: white;
       }
-      
       .btn-good:hover {
-        background: color-mix(in srgb, var(--tertiary) 85%, black);
+        background: #45a049;
       }
-      
       .btn-typo {
-        background: var(--secondary);
-        color: var(--on-secondary);
+        background: #2196f3;
+        color: white;
       }
-      
       .btn-typo:hover {
-        background: color-mix(in srgb, var(--secondary) 85%, black);
+        background: #1976d2;
       }
-      
       .btn-wrong {
-        background: var(--error);
-        color: var(--on-error);
+        background: #f44336;
+        color: white;
       }
-      
       .btn-wrong:hover {
-        background: color-mix(in srgb, var(--error) 85%, black);
+        background: #d32f2f;
       }
       .score-board {
         background: #f8f9fa;
@@ -234,16 +200,6 @@
         transform: translateX(4px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
-      
-      /* Hide theme toggle by default */
-      .theme-toggle {
-        display: none;
-      }
-      
-      /* Show theme toggle only when logged in */
-      body.logged-in .theme-toggle {
-        display: flex;
-      }
     </style>
   </head>
   <body>
@@ -269,7 +225,7 @@
       <div class="card">
         <h3>Vraag Beheer</h3>
         <div id="status-area"></div>
-        <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div style="margin-top: 12px">
           <button id="btn-clear" class="btn-danger" style="display: none">
             Stop huidige vraag
           </button>
@@ -280,10 +236,8 @@
             href="#"
             target="_blank"
             style="display: none"
+            >Toon castscherm (voor projectie)</a
           >
-            <span class="material-icons" style="font-size: 16px; margin-right: 6px;">cast</span>
-            Toon castscherm
-          </a>
         </div>
         <div style="margin-top: 12px">
           <a id="stop-session" class="btn-danger" href="#" style="display: none"
@@ -432,7 +386,7 @@
           }
 
           document.getElementById("cast-link").href =
-            "cast.html?session=" + sessionId;
+            "cast.html?sessie=" + sessionId;
           document.getElementById("cast-link").style.display = "inline-block";
 
           // Show and wire up the Stop Session button when sessie is active
@@ -860,7 +814,7 @@
           }
 
           document.getElementById("cast-link").href =
-            "cast.html?session=" + sessionId;
+            "cast.html?sessie=" + sessionId;
           document.getElementById("cast-link").style.display = "inline-block";
 
           // students
@@ -990,11 +944,10 @@
         es.addEventListener("update", (e) => {
           try {
             console.log("SSE update event:", e.data);
-            // Only apply session data to avoid duplicate calls
-            const d = JSON.parse(e.data);
-            if (d.sess) {
-              applySessionData(d);
-            }
+            loadSession();
+            refreshRecentAnswers();
+            refreshScoreboard();
+            refreshStudentList();
           } catch (err) {
             console.error("SSE update parse", err);
           }
@@ -1003,11 +956,7 @@
         es.addEventListener("question", (e) => {
           try {
             console.log("SSE question event:", e.data);
-            // Only apply session data to avoid duplicate calls
-            const d = JSON.parse(e.data);
-            if (d.sess) {
-              applySessionData(d);
-            }
+            loadSession();
           } catch (err) {
             console.error("SSE question parse", err);
           }
@@ -1016,7 +965,6 @@
         es.addEventListener("answer", (e) => {
           try {
             console.log("SSE answer event:", e.data);
-            // Only refresh specific components to avoid full reload
             refreshRecentAnswers();
             refreshScoreboard();
           } catch (err) {

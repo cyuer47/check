@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cast Scherm - Overhoorder</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="assets/img/logo2.png" />
+    <style>
+      /* Cast-specific styles */
+      body {
+        background: var(--gradient-background);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      
+      .cast-header {
+        background: var(--gradient-surface);
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--outline-variant);
+        box-shadow: var(--shadow-2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .cast-title {
+        font-size: 24px;
+        font-weight: 500;
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .cast-status {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: var(--gradient-primary);
+        color: var(--on-primary);
+        border-radius: var(--radius-full);
+        font-weight: 500;
+        box-shadow: var(--shadow-1);
+      }
+      
+      .cast-content {
+        flex: 1;
+        padding: 40px 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      
+      .question-container {
+        max-width: 800px;
+        width: 100%;
+        background: var(--surface-container);
+        border-radius: var(--radius-xl);
+        padding: 48px;
+        box-shadow: var(--shadow-4);
+        border: 1px solid var(--outline-variant);
+        backdrop-filter: blur(10px);
+        animation: scaleIn var(--animation-emphasized);
+      }
+      
+      .question-number {
+        background: var(--gradient-secondary);
+        color: var(--on-secondary);
+        padding: 8px 16px;
+        border-radius: var(--radius-full);
+        font-weight: 500;
+        font-size: 14px;
+        margin-bottom: 24px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-1);
+      }
+      
+      .question-text {
+        font-size: 36px;
+        font-weight: 400;
+        color: var(--on-surface);
+        line-height: 1.4;
+        margin-bottom: 32px;
+        letter-spacing: -0.5px;
+      }
+      
+      .waiting-message {
+        font-size: 24px;
+        color: var(--on-surface-variant);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 24px 32px;
+        background: var(--gradient-surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-2);
+        animation: float 3s ease-in-out infinite;
+      }
+      
+      .timer-container {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        background: var(--gradient-tertiary);
+        color: var(--on-tertiary);
+        padding: 12px 20px;
+        border-radius: var(--radius-full);
+        font-size: 18px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-2);
+        min-width: 120px;
+        justify-content: center;
+      }
+      
+      .session-info {
+        position: absolute;
+        top: 24px;
+        left: 24px;
+        background: var(--gradient-surface);
+        color: var(--on-surface);
+        padding: 12px 20px;
+        border-radius: var(--radius-lg);
+        font-size: 16px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-1);
+      }
+      
+      .no-question {
+        text-align: center;
+        padding: 60px 40px;
+      }
+      
+      .no-question-icon {
+        font-size: 64px;
+        color: var(--on-surface-variant);
+        margin-bottom: 24px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      
+      .no-question-text {
+        font-size: 24px;
+        color: var(--on-surface-variant);
+        margin-bottom: 16px;
+      }
+      
+      .no-question-subtext {
+        font-size: 16px;
+        color: var(--on-surface-variant);
+      }
+      
+      /* Fullscreen styles */
+      .fullscreen-btn {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: var(--gradient-primary);
+        color: var(--on-primary);
+        border: none;
+        padding: 12px 20px;
+        border-radius: var(--radius-full);
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-3);
+        transition: all var(--animation-normal);
+        z-index: 1000;
+      }
+      
+      .fullscreen-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-4);
+      }
+      
+      /* Responsive design */
+      @media (max-width: 768px) {
+        .cast-content {
+          padding: 20px 16px;
+        }
+        
+        .question-container {
+          padding: 32px 24px;
+        }
+        
+        .question-text {
+          font-size: 28px;
+        }
+        
+        .cast-title {
+          font-size: 20px;
+        }
+        
+        .timer-container,
+        .session-info {
+          position: static;
+          margin: 8px 0;
+        }
+        
+        .cast-header {
+          flex-direction: column;
+          gap: 12px;
+        }
+      }
+      
+      /* Connection status indicator */
+      .connection-status {
+        position: fixed;
+        top: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--surface-container);
+        color: var(--on-surface);
+        padding: 8px 16px;
+        border-radius: var(--radius-full);
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--shadow-2);
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all var(--animation-normal);
+      }
+      
+      .connection-status.show {
+        opacity: 1;
+        visibility: visible;
+      }
+      
+      .connection-status.connected {
+        background: var(--gradient-primary);
+        color: var(--on-primary);
+      }
+      
+      .connection-status.disconnected {
+        background: var(--gradient-tertiary);
+        color: var(--on-tertiary);
+      }
+      
+      .connection-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: pulse 2s ease-in-out infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Connection Status Indicator -->
+    <div id="connectionStatus" class="connection-status">
+      <span class="connection-dot"></span>
+      <span id="connectionText">Verbinden...</span>
+    </div>
+
+    <!-- Header -->
+    <header class="cast-header">
+      <div class="cast-title">
+        <span class="material-icons">cast</span>
+        Cast Scherm
+      </div>
+      <div class="cast-status">
+        <span class="material-icons">live_tv</span>
+        Live
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="cast-content">
+      <!-- Session Info -->
+      <div class="session-info">
+        <span class="material-icons">class</span>
+        <span id="sessionName">Laden...</span>
+      </div>
+
+      <!-- Timer -->
+      <div class="timer-container" id="timerContainer" style="display: none;">
+        <span class="material-icons">timer</span>
+        <span id="timerText">00:00</span>
+      </div>
+
+      <!-- Question Container -->
+      <div class="question-container" id="questionContainer">
+        <!-- Content will be dynamically loaded -->
+        <div class="no-question">
+          <span class="material-icons no-question-icon">quiz</span>
+          <div class="no-question-text">Geen actieve vraag</div>
+          <div class="no-question-subtext">Wacht op de docent om een vraag te starten...</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Fullscreen Button -->
+    <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
+      <span class="material-icons">fullscreen</span>
+      Volledig scherm
+    </button>
+
+    <script>
+      // Get session ID from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session');
+      
+      if (!sessionId) {
+        document.getElementById('questionContainer').innerHTML = `
+          <div class="no-question">
+            <span class="material-icons no-question-icon">error</span>
+            <div class="no-question-text">Geen sessie ID</div>
+            <div class="no-question-subtext">Gebruik de juiste cast-link van de docent...</div>
+          </div>
+        `;
+      }
+      
+      let eventSource = null;
+      let currentQuestion = null;
+      let questionStartTime = null;
+      let timerInterval = null;
+      
+      // Connection status management
+      function updateConnectionStatus(connected, message) {
+        const statusEl = document.getElementById('connectionStatus');
+        const textEl = document.getElementById('connectionText');
+        
+        statusEl.className = `connection-status show ${connected ? 'connected' : 'disconnected'}`;
+        textEl.textContent = message;
+        
+        if (connected) {
+          setTimeout(() => {
+            statusEl.classList.remove('show');
+          }, 3000);
+        }
+      }
+      
+      // Start SSE connection
+      function startSSEConnection() {
+        if (!sessionId) return;
+        
+        updateConnectionStatus(false, 'Verbinden...');
+        
+        eventSource = new EventSource(`/sessies/${sessionId}/stream`);
+        
+        eventSource.onopen = function() {
+          updateConnectionStatus(true, 'Verbonden');
+          console.log('SSE connection opened');
+          // Initial fetch when connection opens
+          fetchSessionInfo();
+        };
+        
+        eventSource.addEventListener('connect', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('SSE connect event:', data);
+            updateConnectionStatus(true, 'Verbonden');
+          } catch (error) {
+            console.error('Error parsing connect event:', error);
+          }
+        });
+        
+        eventSource.addEventListener('update', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('SSE update event:', data);
+            
+            // Handle empty update events (cast.html gets these as it's treated like a student)
+            if (!data || Object.keys(data).length === 0) {
+              fetchSessionInfo();
+            } else {
+              handleSSEMessage({ type: 'update', payload: data });
+            }
+          } catch (error) {
+            console.error('Error parsing update event:', error);
+          }
+        });
+        
+        eventSource.addEventListener('session', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('SSE session event:', data);
+            handleSSEMessage({ type: 'session', payload: data });
+          } catch (error) {
+            console.error('Error parsing session event:', error);
+          }
+        });
+        
+        eventSource.addEventListener('question', function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('SSE question event:', data);
+            handleSSEMessage({ type: 'question', payload: data });
+          } catch (error) {
+            console.error('Error parsing question event:', error);
+          }
+        });
+        
+        eventSource.onerror = function(event) {
+          console.error('SSE connection error:', event);
+          updateConnectionStatus(false, 'Verbinding verloren');
+          
+          // Try to reconnect after 3 seconds
+          setTimeout(() => {
+            if (eventSource.readyState === EventSource.CLOSED) {
+              startSSEConnection();
+            }
+          }, 3000);
+        };
+      }
+      
+      // Handle SSE messages
+      function handleSSEMessage(data) {
+        console.log('Received SSE message:', data);
+        
+        // Handle different event types
+        if (data.type === 'connect' || data.status === 'connected') {
+          updateConnectionStatus(true, 'Verbonden');
+          return;
+        }
+        
+        // For cast.html, we need to handle the empty update events differently
+        // The server sends empty updates to students, but we need session info
+        if (data.type === 'update' && (!data.payload || Object.keys(data.payload).length === 0)) {
+          // Fetch session info manually when we get empty update
+          fetchSessionInfo();
+          return;
+        }
+        
+        // Handle session data
+        if (data.payload) {
+          switch (data.type) {
+            case 'session':
+            case 'update':
+              updateSessionInfo(data.payload);
+              if (data.payload.currentQuestion) {
+                displayQuestion(data.payload.currentQuestion);
+              } else {
+                clearQuestion();
+              }
+              break;
+            case 'question':
+              if (data.payload.currentQuestion) {
+                displayQuestion(data.payload.currentQuestion);
+              }
+              break;
+            case 'clear_question':
+              clearQuestion();
+              break;
+            case 'timer':
+              updateTimer(data.payload);
+              break;
+          }
+        }
+      }
+      
+      // Update session information
+      function updateSessionInfo(sessionInfo) {
+        const sessionNameEl = document.getElementById('sessionName');
+        if (sessionInfo.klas_naam) {
+          sessionNameEl.textContent = sessionInfo.klas_naam;
+        }
+      }
+      
+      // Fetch session info manually (for cast.html when getting empty updates)
+      async function fetchSessionInfo() {
+        if (!sessionId) return;
+        
+        try {
+          const response = await fetch(`/sessies/${sessionId}/cast`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Fetched session info:', data);
+            
+            if (data.sess) {
+              updateSessionInfo(data.sess);
+              
+              // Check for current question in the session data
+              if (data.sess.current_question_id && data.currentQuestion) {
+                displayQuestion(data.currentQuestion);
+              } else {
+                clearQuestion();
+              }
+            }
+          } else {
+            console.error('Failed to fetch session info:', response.status, response.statusText);
+          }
+        } catch (error) {
+          console.error('Error fetching session info:', error);
+        }
+      }
+      
+      // Display question
+      function displayQuestion(question) {
+        currentQuestion = question;
+        questionStartTime = Date.now();
+        
+        const container = document.getElementById('questionContainer');
+        container.innerHTML = `
+          <div class="question-number">
+            <span class="material-icons">help_outline</span>
+            Vraag ${question.vraag_nummer || 1}
+          </div>
+          <div class="question-text">${question.vraag}</div>
+          <div class="waiting-message">
+            <span class="material-icons">hourglass_empty</span>
+            Wachten op antwoorden...
+          </div>
+        `;
+        
+        // Start timer
+        startTimer();
+        
+        // Add animation
+        container.classList.add('scale-in');
+        setTimeout(() => container.classList.remove('scale-in'), 500);
+      }
+      
+      // Clear question
+      function clearQuestion() {
+        currentQuestion = null;
+        stopTimer();
+        
+        const container = document.getElementById('questionContainer');
+        container.innerHTML = `
+          <div class="no-question">
+            <span class="material-icons no-question-icon">quiz</span>
+            <div class="no-question-text">Geen actieve vraag</div>
+            <div class="no-question-subtext">Wacht op de docent om een vraag te starten...</div>
+          </div>
+        `;
+      }
+      
+      // Timer functions
+      function startTimer() {
+        stopTimer();
+        const timerContainer = document.getElementById('timerContainer');
+        timerContainer.style.display = 'flex';
+        
+        timerInterval = setInterval(() => {
+          if (questionStartTime) {
+            const elapsed = Math.floor((Date.now() - questionStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timerText').textContent = 
+              `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          }
+        }, 1000);
+      }
+      
+      function stopTimer() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        document.getElementById('timerContainer').style.display = 'none';
+      }
+      
+      function updateTimer(timerData) {
+        if (timerData.elapsed) {
+          const minutes = Math.floor(timerData.elapsed / 60);
+          const seconds = timerData.elapsed % 60;
+          document.getElementById('timerText').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+      }
+      
+      // Fullscreen functionality
+      function toggleFullscreen() {
+        const btn = document.getElementById('fullscreenBtn');
+        
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().then(() => {
+            btn.innerHTML = '<span class="material-icons">fullscreen_exit</span>Verlaat volledig scherm';
+          }).catch(err => {
+            console.error('Error attempting to enable fullscreen:', err);
+          });
+        } else {
+          document.exitFullscreen().then(() => {
+            btn.innerHTML = '<span class="material-icons">fullscreen</span>Volledig scherm';
+          }).catch(err => {
+            console.error('Error attempting to exit fullscreen:', err);
+          });
+        }
+      }
+      
+      // Handle fullscreen changes
+      document.addEventListener('fullscreenchange', () => {
+        const btn = document.getElementById('fullscreenBtn');
+        if (document.fullscreenElement) {
+          btn.innerHTML = '<span class="material-icons">fullscreen_exit</span>Verlaat volledig scherm';
+        } else {
+          btn.innerHTML = '<span class="material-icons">fullscreen</span>Volledig scherm';
+        }
+      });
+      
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          toggleFullscreen();
+        }
+        if (e.key === 'Escape' && document.fullscreenElement) {
+          document.exitFullscreen();
+        }
+      });
+      
+      // Initialize connection when page loads
+      window.addEventListener('load', () => {
+        startSSEConnection();
+      });
+      
+      // Cleanup on page unload
+      window.addEventListener('beforeunload', () => {
+        if (eventSource) {
+          eventSource.close();
+        }
+        stopTimer();
+      });
+    </script>
+  </body>
+</html>

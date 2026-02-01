@@ -117,8 +117,8 @@
                 </label>
               </div>
 
-              <div id="message" class="form-success">Opgeslagen ✅</div>
-              <div id="error" class="form-error">Fout bij opslaan</div>
+              <div id="message" class="form-success" style="display: none;">Opgeslagen ✅</div>
+              <div id="error" class="form-error" style="display: none;">Fout bij opslaan</div>
             </form>
           </div>
         </div>
@@ -209,16 +209,53 @@
 
       function showMessage(msg) {
         const el = document.getElementById("message");
+        const errorEl = document.getElementById("error");
+        
+        // Hide error message first
+        errorEl.style.display = "none";
+        
         el.textContent = msg;
         el.style.display = "block";
-        setTimeout(() => (el.style.display = "none"), 3000);
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+          el.style.display = "none";
+        }, 3000);
       }
+      
       function showError(msg) {
         const el = document.getElementById("error");
+        const messageEl = document.getElementById("message");
+        
+        // Hide success message first
+        messageEl.style.display = "none";
+        
         el.textContent = msg;
         el.style.display = "block";
-        setTimeout(() => (el.style.display = "none"), 3000);
+        
+        // Auto-hide after 5 seconds for errors
+        setTimeout(() => {
+          el.style.display = "none";
+        }, 5000);
       }
+      
+      function hideMessages() {
+        document.getElementById("message").style.display = "none";
+        document.getElementById("error").style.display = "none";
+      }
+
+      // Hide messages when user starts typing
+      const formInputs = document.querySelectorAll('#profileForm input, #profileForm textarea');
+      formInputs.forEach(input => {
+        input.addEventListener('input', hideMessages);
+        input.addEventListener('focus', hideMessages);
+      });
+      
+      // Hide messages when file is selected
+      document.getElementById('avatarFile').addEventListener('change', hideMessages);
+      
+      // Hide messages when checkbox changes
+      document.getElementById('isPublic').addEventListener('change', hideMessages);
 
       document
         .getElementById("profileForm")

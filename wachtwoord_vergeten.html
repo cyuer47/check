@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <title>Wachtwoord Vergeten - Overhoorder</title>
     <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="assets/img/logo2.png" />
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -74,10 +76,16 @@
     <div class="container">
       <div class="container card" style="max-width: 420px; margin: 40px auto">
         <div style="margin-bottom: 12px">
-          <a href="login.html" class="btn-text">Terug naar inloggen</a>
+          <a href="login.html" class="btn-text">
+            <span class="material-icons" style="font-size: 16px; margin-right: 6px;">arrow_back</span>
+            Terug naar inloggen
+          </a>
         </div>
 
-        <h2>Wachtwoord Vergeten</h2>
+        <h2>
+          <span class="material-icons" style="font-size: 24px; margin-right: 8px; vertical-align: middle;">lock_reset</span>
+          Wachtwoord Vergeten
+        </h2>
         <p class="helper" style="margin-bottom: 16px">
           Voer je e-mailadres in en we sturen je een link om je wachtwoord te
           resetten
@@ -87,14 +95,21 @@
         <div id="message" style="color: green; display: none"></div>
 
         <form id="forgotForm">
-          <label for="email">E-mailadres</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            required
-            placeholder="jouw.email@school.nl"
-          />
+          <label for="email">
+            <span class="material-icons" style="font-size: 16px; margin-right: 4px; vertical-align: middle;">email</span>
+            E-mailadres
+          </label>
+          <div style="position: relative;">
+            <span class="material-icons" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--on-surface-variant); font-size: 20px;">email</span>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              required
+              placeholder="jouw.email@school.nl"
+              style="padding-left: 44px;"
+            />
+          </div>
 
           <!-- Verborgen velden voor EmailJS template -->
           <input
@@ -119,6 +134,7 @@
               class="btn-primary"
               style="width: 100%"
             >
+              <span class="material-icons" style="font-size: 16px; margin-right: 6px;">send</span>
               Verstuur herstellink
             </button>
           </div>

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <title>Profiel - Overhoorder</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="assets/img/logo2.png" />
+  </head>
+  <body>
+    <div class="container">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        <div class="chip">
+          <span class="material-icons" style="font-size: 16px; margin-right: 4px;">school</span>
+          Overhoorder
+        </div>
+        <div class="profile-container">
+          <button
+            class="profile-btn"
+            id="profileBtn"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="profileMenu"
+          >
+            <img id="avatar" src="" alt="Avatar" class="profile-avatar" />
+            <span id="profile-name" class="profile-name"></span>
+            <span class="material-icons dropdown-arrow">arrow_drop_down</span>
+          </button>
+          <div
+            class="profile-menu"
+            id="profileMenu"
+            role="menu"
+            aria-labelledby="profileBtn"
+          >
+            <div class="menu-header">
+              <img id="menu-avatar" src="" alt="Avatar" class="menu-avatar" />
+              <div class="menu-info">
+                <div id="menu-name" class="menu-name"></div>
+                <div id="menu-email" class="menu-email"></div>
+              </div>
+            </div>
+            <div class="divider" aria-hidden="true"></div>
+            <a href="docent_settings.html" role="menuitem">
+              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">settings</span>
+              Instellingen
+            </a>
+            <a href="dashboard.html" role="menuitem">
+              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">dashboard</span>
+              Dashboard
+            </a>
+            <a
+              href="#"
+              id="logout-link"
+              class="logout logout-btn"
+              role="menuitem"
+            >
+              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">logout</span>
+              Uitloggen
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <h1 class="app-title">Mijn Profiel</h1>
+
+      <div class="card">
+        <h3>
+          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">person</span>
+          Profiel Informatie
+        </h3>
+        <div id="profile-info">
+          <div style="text-align: center; padding: 20px;">
+            <div class="spinner"></div>
+            <p style="margin-top: 12px; color: var(--on-surface-variant);">Laden...</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 16px"></div>
+
+      <div class="card">
+        <h3>
+          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">search</span>
+          Andere Profielen Zoeken
+        </h3>
+        <p class="helper">Zoek naar elk publiek profiel!</p>
+        <div style="position: relative;">
+          <span class="material-icons" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--on-surface-variant); font-size: 20px;">search</span>
+          <input type="text" id="search" placeholder="Zoek een docent" style="padding-left: 44px;" />
+        </div>
+        <ul id="search-results" style="list-style: none; padding: 0; margin: 12px 0 0 0;"></ul>
+      </div>
+
+      <div style="height: 16px"></div>
+
+      <div class="card">
+        <h3>
+          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">analytics</span>
+          Statistieken
+        </h3>
+        <div id="profile-stats">
+          <div style="text-align: center; padding: 20px;">
+            <div class="spinner"></div>
+            <p style="margin-top: 12px; color: var(--on-surface-variant);">Laden...</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 16px"></div>
+
+      <div class="card">
+        <h3>
+          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">class</span>
+          Mijn Klassen
+        </h3>
+        <div id="profile-classes">
+          <div style="text-align: center; padding: 20px;">
+            <div class="spinner"></div>
+            <p style="margin-top: 12px; color: var(--on-surface-variant);">Laden...</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 16px"></div>
+
+      <div class="card">
+        <h3>
+          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">quiz</span>
+          Recente Vragenlijsten
+        </h3>
+        <div id="recent-vragenlijsten">
+          <div style="text-align: center; padding: 20px;">
+            <div class="spinner"></div>
+            <p style="margin-top: 12px; color: var(--on-surface-variant);">Laden...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location = "login.html?redirecturi=" + encodeURIComponent("profile.html");
+      }
+
+      // Profile dropdown functionality
+      document.addEventListener("DOMContentLoaded", () => {
+        const container = document.querySelector(".profile-container");
+        const btn = document.getElementById("profileBtn");
+        const menu = document.getElementById("profileMenu");
+        
+        if (!container || !btn || !menu) return;
+
+        function openMenu() {
+          container.classList.add("active");
+          btn.setAttribute("aria-expanded", "true");
+          const first = menu.querySelector('[role="menuitem"]');
+          if (first) first.focus();
+        }
+        
+        function closeMenu(opts = { focusButton: true }) {
+          container.classList.remove("active");
+          btn.setAttribute("aria-expanded", "false");
+          if (opts && opts.focusButton) {
+            try {
+              btn.focus();
+            } catch (e) {}
+          }
+        }
+
+        function populateMenuHeader() {
+          try {
+            const menuAvatar = document.getElementById("menu-avatar");
+            const menuName = document.getElementById("menu-name");
+            const menuEmail = document.getElementById("menu-email");
+            const avatar = document.getElementById("avatar");
+            const profileName = document.getElementById("profile-name");
+            
+            if (menuAvatar && avatar && avatar.src) {
+              menuAvatar.src = avatar.src;
+            } else {
+              menuAvatar.src = "assets/img/logo2.png";
+            }
+            
+            if (menuName && profileName) {
+              menuName.textContent = profileName.textContent || "Docent";
+            }
+          } catch (e) {
+            console.error('Error populating menu header:', e);
+          }
+        }
+
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (container.classList.contains("active")) closeMenu();
+          else {
+            populateMenuHeader();
+            openMenu();
+          }
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!container.contains(e.target)) closeMenu({ focusButton: false });
+        });
+
+        menu.addEventListener("click", (e) => {
+          const mi = e.target.closest('[role="menuitem"]');
+          if (mi) {
+            setTimeout(() => closeMenu({ focusButton: false }), 50);
+          }
+        });
+
+        btn.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            populateMenuHeader();
+            openMenu();
+          }
+        });
+        
+        menu.addEventListener("keydown", (e) => {
+          const items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
+          const idx = items.indexOf(document.activeElement);
+          if (e.key === "Escape") {
+            e.preventDefault();
+            closeMenu();
+            return;
+          }
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            const next = items[idx + 1] || items[0];
+            next && next.focus();
+          }
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            const prev = items[idx - 1] || items[items.length - 1];
+            prev && prev.focus();
+          }
+        });
+
+        // Logout functionality
+        document.getElementById("logout-link").addEventListener("click", (e) => {
+          e.preventDefault();
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location = "login.html";
+        });
+      });
+
+      // Load profile data
+      async function loadProfile() {
+        try {
+          // First load dashboard data to get classes and vragenlijsten
+          const dashboardRes = await fetch("/dashboard-data", {
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (!dashboardRes.ok) throw new Error("Fetch dashboard data failed");
+          const dashboardData = await dashboardRes.json();
+          
+          // Store dashboard data globally
+          window.dashboardData = dashboardData;
+          
+          // Then load profile data
+          const res = await fetch("/profile", {
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (!res.ok) throw new Error("Fetch profile failed");
+          const data = await res.json();
+          
+          // Update profile button
+          const profileName = document.getElementById("profile-name");
+          const avatar = document.getElementById("avatar");
+          
+          if (profileName) {
+            profileName.textContent = data.profile.naam || "Docent";
+          }
+          
+          if (avatar) {
+            if (data.profile.avatar) {
+              avatar.src = data.profile.avatar;
+            } else {
+              // Generate identicon
+              const hash = data.profile.email || data.profile.naam || "default";
+              avatar.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(hash)}`;
+            }
+          }
+          
+          // Update profile info
+          updateProfileInfo(data.profile);
+          
+          // Load other sections using available dashboard data
+          await Promise.all([
+            loadStats(),
+            loadClasses(),
+            loadRecentVragenlijsten()
+          ]);
+          
+        } catch (err) {
+          console.error("Error loading profile:", err);
+          document.getElementById("profile-info").innerHTML = `
+            <div style="text-align: center; padding: 20px; color: var(--error);">
+              <span class="material-icons" style="font-size: 48px; margin-bottom: 12px;">error</span>
+              <p>Profiel kon niet worden geladen</p>
+            </div>
+          `;
+        }
+      }
+
+      function updateProfileInfo(profile) {
+        const profileInfo = document.getElementById("profile-info");
+        profileInfo.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+            <img id="profile-avatar" src="${profile.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(profile.email || profile.naam)}`}" 
+                 alt="Profiel" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary);">
+            <div>
+              <h3 style="margin: 0; color: var(--primary); font-size: 24px;">${escapeHtml(profile.naam || 'Onbekend')}</h3>
+              <p style="margin: 4px 0; color: var(--on-surface-variant);">${escapeHtml(profile.email || '')}</p>
+              <div style="margin-top: 8px;">
+                <span class="chip" style="background: ${profile.is_public ? 'var(--gradient-primary)' : 'var(--gradient-secondary)'}; color: var(--on-primary);">
+                  <span class="material-icons" style="font-size: 14px; margin-right: 4px;">${profile.is_public ? 'public' : 'lock'}</span>
+                  ${profile.is_public ? 'Openbaar profiel' : 'Privé profiel'}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          ${profile.vakken ? `
+          <div style="margin-bottom: 16px;">
+            <h4 style="margin: 0 0 8px 0; color: var(--on-surface); font-size: 16px;">
+              <span class="material-icons" style="font-size: 16px; margin-right: 4px; vertical-align: middle;">school</span>
+              Vakken
+            </h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              ${profile.vakken.split(',').map(vak => 
+                `<span class="chip" style="background: var(--gradient-tertiary); color: var(--on-tertiary);">${escapeHtml(vak.trim())}</span>`
+              ).join('')}
+            </div>
+          </div>
+          ` : ''}
+          
+          ${profile.bio ? `
+          <div style="margin-bottom: 16px;">
+            <h4 style="margin: 0 0 8px 0; color: var(--on-surface); font-size: 16px;">
+              <span class="material-icons" style="font-size: 16px; margin-right: 4px; vertical-align: middle;">description</span>
+              Bio
+            </h4>
+            <p style="margin: 0; color: var(--on-surface-variant); line-height: 1.5;">${escapeHtml(profile.bio)}</p>
+          </div>
+          ` : ''}
+          
+          <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <a href="docent_settings.html" class="btn-primary" style="display: flex; align-items: center; gap: 6px;">
+              <span class="material-icons" style="font-size: 16px;">edit</span>
+              Profiel Bewerken
+            </a>
+            <a href="dashboard.html" class="btn-secondary" style="display: flex; align-items: center; gap: 6px;">
+              <span class="material-icons" style="font-size: 16px;">dashboard</span>
+              Dashboard
+            </a>
+          </div>
+        `;
+      }
+
+      async function loadStats() {
+        try {
+          // Use already loaded dashboard data instead of separate API call
+          const data = window.dashboardData;
+          if (!data) {
+            throw new Error("No dashboard data available");
+          }
+          
+          const statsContainer = document.getElementById("profile-stats");
+          statsContainer.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+              <div style="text-align: center; padding: 16px; background: var(--gradient-surface); border-radius: var(--radius-lg);">
+                <div style="font-size: 32px; font-weight: 600; color: var(--primary); margin-bottom: 4px;">${data.klassen ? data.klassen.length : 0}</div>
+                <div style="color: var(--on-surface-variant); font-size: 14px;">Klassen</div>
+              </div>
+              <div style="text-align: center; padding: 16px; background: var(--gradient-surface); border-radius: var(--radius-lg);">
+                <div style="font-size: 32px; font-weight: 600; color: var(--secondary); margin-bottom: 4px;">${data.biblio_lijsten ? data.biblio_lijsten.length : 0}</div>
+                <div style="color: var(--on-surface-variant); font-size: 14px;">Vragenlijsten</div>
+              </div>
+              <div style="text-align: center; padding: 16px; background: var(--gradient-surface); border-radius: var(--radius-lg);">
+                <div style="font-size: 32px; font-weight: 600; color: var(--tertiary); margin-bottom: 4px;">${data.boeken ? data.boeken.length : 0}</div>
+                <div style="color: var(--on-surface-variant); font-size: 14px;">Boeken</div>
+              </div>
+              <div style="text-align: center; padding: 16px; background: var(--gradient-surface); border-radius: var(--radius-lg);">
+                <div style="font-size: 32px; font-weight: 600; color: var(--error); margin-bottom: 4px;">${data.licenties ? data.licenties.length : 0}</div>
+                <div style="color: var(--on-surface-variant); font-size: 14px;">Licenties</div>
+              </div>
+            </div>
+          `;
+        } catch (err) {
+          console.error("Error loading stats:", err);
+          document.getElementById("profile-stats").innerHTML = `
+            <p style="text-align: center; color: var(--error); padding: 20px;">
+              <span class="material-icons" style="font-size: 24px; margin-right: 8px; vertical-align: middle;">error</span>
+              Statistieken konden niet worden geladen
+            </p>
+          `;
+        }
+      }
+
+      async function loadClasses() {
+        try {
+          // Use dashboard data instead of separate API call
+          const data = window.dashboardData;
+          if (!data || !data.klassen) {
+            throw new Error("No dashboard data available");
+          }
+          
+          const classesContainer = document.getElementById("profile-classes");
+          if (!data.klassen || data.klassen.length === 0) {
+            classesContainer.innerHTML = `
+              <p style="text-align: center; color: var(--on-surface-variant); padding: 20px;">
+                <span class="material-icons" style="font-size: 24px; margin-right: 8px; vertical-align: middle;">class</span>
+                Nog geen klassen aangemaakt
+              </p>
+            `;
+            return;
+          }
+          
+          classesContainer.innerHTML = `
+            <div style="display: grid; gap: 12px;">
+              ${data.klassen.slice(0, 5).map(klas => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--gradient-surface); border-radius: var(--radius-lg);">
+                  <div>
+                    <div style="font-weight: 500; color: var(--on-surface);">${escapeHtml(klas.naam)}</div>
+                    <div style="font-size: 14px; color: var(--on-surface-variant);">Code: ${escapeHtml(klas.klascode || '')}</div>
+                  </div>
+                  <a href="manage_klas.html?klas=${klas.id}" class="btn-secondary small">
+                    <span class="material-icons" style="font-size: 14px; margin-right: 4px;">manage</span>
+                    Beheer
+                  </a>
+                </div>
+              `).join('')}
+              ${data.klassen.length > 5 ? `
+                <div style="text-align: center; padding: 12px;">
+                  <a href="dashboard.html" class="btn-text">Bekijk alle ${data.klassen.length} klassen →</a>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        } catch (err) {
+          console.error("Error loading classes:", err);
+          document.getElementById("profile-classes").innerHTML = `
+            <p style="text-align: center; color: var(--error); padding: 20px;">
+              <span class="material-icons" style="font-size: 24px; margin-right: 8px; vertical-align: middle;">error</span>
+              Klassen konden niet worden geladen
+            </p>
+          `;
+        }
+      }
+
+      async function loadRecentVragenlijsten() {
+        try {
+          // Use dashboard data instead of separate API call
+          const data = window.dashboardData;
+          if (!data || !data.biblio_lijsten) {
+            throw new Error("No dashboard data available");
+          }
+          
+          const vragenlijstenContainer = document.getElementById("recent-vragenlijsten");
+          if (!data.biblio_lijsten || data.biblio_lijsten.length === 0) {
+            vragenlijstenContainer.innerHTML = `
+              <p style="text-align: center; color: var(--on-surface-variant); padding: 20px;">
+                <span class="material-icons" style="font-size: 24px; margin-right: 8px; vertical-align: middle;">quiz</span>
+                Nog geen vragenlijsten aangemaakt
+              </p>
+            `;
+            return;
+          }
+          
+          vragenlijstenContainer.innerHTML = `
+            <div style="display: grid; gap: 12px;">
+              ${data.biblio_lijsten.slice(0, 5).map(vragenlijst => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--gradient-surface); border-radius: var(--radius-lg);">
+                  <div>
+                    <div style="font-weight: 500; color: var(--on-surface);">${escapeHtml(vragenlijst.naam)}</div>
+                    <div style="font-size: 14px; color: var(--on-surface-variant);">
+                      Bibliotheek • ${vragenlijst.licentie_type || 'gratis'}
+                    </div>
+                  </div>
+                  <a href="#" class="btn-secondary small" onclick="alert('Bibliotheek vragenlijst bekijken functie wordt ontwikkelt')">
+                    <span class="material-icons" style="font-size: 14px; margin-right: 4px;">visibility</span>
+                    Bekijken
+                  </a>
+                </div>
+              `).join('')}
+              ${data.biblio_lijsten.length > 5 ? `
+                <div style="text-align: center; padding: 12px;">
+                  <a href="dashboard.html" class="btn-text">Bekijk alle ${data.biblio_lijsten.length} vragenlijsten →</a>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        } catch (err) {
+          console.error("Error loading vragenlijsten:", err);
+          document.getElementById("recent-vragenlijsten").innerHTML = `
+            <p style="text-align: center; color: var(--error); padding: 20px;">
+              <span class="material-icons" style="font-size: 24px; margin-right: 8px; vertical-align: middle;">error</span>
+              Vragenlijsten konden niet worden geladen
+            </p>
+          `;
+        }
+      }
+
+      function escapeHtml(s) {
+        if (!s) return "";
+        return s.replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      }
+
+      // Load profile when page loads
+      loadProfile();
+      
+      // Search functionality
+      let searchTimer;
+      document.getElementById("search").addEventListener("input", (e) => {
+        const q = e.target.value.trim();
+        const ul = document.getElementById("search-results");
+        ul.innerHTML = "";
+        if (!q) return;
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(async () => {
+          try {
+            const res = await fetch("/search?q=" + encodeURIComponent(q));
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            ul.innerHTML = "";
+            if (!data || data.length === 0) {
+              ul.innerHTML = "<li style='padding: 12px; color: var(--on-surface-variant); text-align: center;'>Geen resultaten gevonden.</li>";
+              return;
+            }
+            data.forEach((p) => {
+              const li = document.createElement("li");
+              li.style.margin = "8px 0";
+              
+              const a = document.createElement("a");
+              a.href = "#"; // We'll handle this with JavaScript
+              a.style.cssText = `
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background: var(--gradient-surface);
+                border-radius: var(--radius-lg);
+                text-decoration: none;
+                color: var(--on-surface);
+                transition: all var(--animation-normal);
+              `;
+              
+              // Create avatar
+              const avatar = document.createElement("img");
+              avatar.src = p.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(p.email || p.naam)}`;
+              avatar.style.cssText = "width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);";
+              avatar.alt = "Avatar";
+              
+              // Create info container
+              const info = document.createElement("div");
+              info.style.cssText = "flex: 1;";
+              
+              // Name
+              const name = document.createElement("div");
+              name.style.cssText = "font-weight: 500; color: var(--on-surface); margin-bottom: 4px;";
+              name.textContent = p.naam || "Onbekend";
+              
+              // Badge/info
+              const badge = document.createElement("div");
+              badge.style.cssText = "font-size: 14px; color: var(--on-surface-variant);";
+              badge.textContent = p.badge || p.email || "";
+              
+              info.appendChild(name);
+              info.appendChild(badge);
+              
+              // View profile button
+              const viewBtn = document.createElement("div");
+              viewBtn.innerHTML = `<span class="material-icons" style="font-size: 16px;">person</span>`;
+              viewBtn.style.cssText = `
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                background: var(--gradient-primary);
+                color: var(--on-primary);
+                border-radius: 50%;
+                font-size: 12px;
+              `;
+              
+              a.appendChild(avatar);
+              a.appendChild(info);
+              a.appendChild(viewBtn);
+              
+              // Add hover effect
+              a.addEventListener("mouseenter", () => {
+                a.style.background = "var(--gradient-elevated)";
+                a.style.transform = "translateY(-1px)";
+                a.style.boxShadow = "var(--shadow-2)";
+              });
+              
+              a.addEventListener("mouseleave", () => {
+                a.style.background = "var(--gradient-surface)";
+                a.style.transform = "translateY(0)";
+                a.style.boxShadow = "none";
+              });
+              
+              // Handle click to view profile
+              a.addEventListener("click", (e) => {
+                e.preventDefault();
+                viewOtherProfile(p.id);
+              });
+              
+              li.appendChild(a);
+              ul.appendChild(li);
+            });
+          } catch (err) {
+            console.error(err);
+            ul.innerHTML = "<li style='padding: 12px; color: var(--error); text-align: center;'>Fout bij zoeken.</li>";
+          }
+        }, 250);
+      });
+      
+      // Function to view other profile
+      function viewOtherProfile(userId) {
+        // For now, we'll show a message. In a real implementation, 
+        // you might navigate to a different page or show a modal
+        const resultsContainer = document.getElementById("search-results");
+        resultsContainer.innerHTML = `
+          <li style="padding: 16px; background: var(--gradient-primary); color: var(--on-primary); border-radius: var(--radius-lg); text-align: center;">
+            <span class="material-icons" style="font-size: 24px; margin-right: 8px; vertical-align: middle;">info</span>
+            Profiel bekijken functie wordt ontwikkeld. User ID: ${userId}
+          </li>
+        `;
+        
+        // Clear search after 3 seconds
+        setTimeout(() => {
+          resultsContainer.innerHTML = "";
+          document.getElementById("search").value = "";
+        }, 3000);
+      }
+    </script>
+  </body>
+</html>

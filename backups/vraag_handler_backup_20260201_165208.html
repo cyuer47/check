@@ -6,10 +6,7 @@
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="icon" type="image/x-icon" href="assets/img/logo2.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-      /* Enhanced teacher page styling with Material 3 Dark Purple */
       .modal {
         display: none;
         position: fixed;
@@ -19,160 +16,54 @@
         width: 100%;
         height: 100%;
         overflow: auto;
-        background-color: var(--scrim);
-        animation: fadeIn var(--animation-normal);
+        background-color: rgba(0, 0, 0, 0.6);
       }
-      
       .modal-content {
-        background-color: var(--surface-container);
-        margin: 10% auto;
-        padding: 32px;
-        border-radius: var(--radius-xl);
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border-radius: 8px;
         width: 90%;
-        max-width: 480px;
-        box-shadow: var(--shadow-5);
+        max-width: 420px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         text-align: center;
-        animation: scaleIn var(--animation-bounce);
-        color: var(--on-surface);
-        border: 1px solid var(--outline-variant);
       }
-      
-      .modal-close {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: var(--on-surface-variant);
-        cursor: pointer;
-        padding: 8px;
-        border-radius: var(--radius-full);
-        transition: all var(--animation-normal);
-      }
-      
-      .modal-close:hover {
-        background: var(--surface-container-high);
-        color: var(--on-surface);
-      }
-      
       .modal-buttons {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        margin-top: 24px;
+        gap: 10px;
+        margin-top: 20px;
       }
-      
       .modal-buttons button {
-        padding: 16px 24px;
+        padding: 12px;
         font-size: 16px;
-        border-radius: var(--radius-lg);
+        border-radius: 20px;
         border: none;
         cursor: pointer;
-        transition: all var(--animation-normal);
-        position: relative;
-        overflow: hidden;
-        font-weight: 500;
-        min-height: 48px;
       }
-      
-      .modal-buttons button::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        transition: width var(--animation-emphasized), height var(--animation-emphasized);
-      }
-      
-      .modal-buttons button:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-3);
-      }
-      
-      .modal-buttons button:active::before {
-        width: 300px;
-        height: 300px;
-      }
-      
       .btn-good {
-        background: var(--tertiary);
-        color: var(--on-tertiary);
+        background: #4caf50;
+        color: white;
       }
-      
-      .btn-good:hover {
-        background: color-mix(in srgb, var(--tertiary) 85%, black);
-      }
-      
       .btn-typo {
-        background: var(--secondary);
-        color: var(--on-secondary);
+        background: #2196f3;
+        color: white;
       }
-      
-      .btn-typo:hover {
-        background: color-mix(in srgb, var(--secondary) 85%, black);
-      }
-      
       .btn-wrong {
-        background: var(--error);
-        color: var(--on-error);
-      }
-      
-      .btn-wrong:hover {
-        background: color-mix(in srgb, var(--error) 85%, black);
+        background: #f44336;
+        color: white;
       }
       .score-board {
         background: #f8f9fa;
         padding: 15px;
         border-radius: 12px;
         margin-bottom: 16px;
-        position: relative;
-        overflow: hidden;
-        animation: fadeIn var(--animation-normal);
       }
-      
-      .score-board::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.1), transparent);
-        transition: left var(--animation-slow);
-      }
-      
-      .score-board:hover::before {
-        left: 100%;
-      }
-      
       .current-question {
         background: #e3f2fd;
         padding: 20px;
         border-radius: 12px;
         border-left: 4px solid #2196f3;
-        animation: slideIn var(--animation-normal);
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .current-question::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(33, 150, 243, 0.1), transparent);
-        transition: left var(--animation-slow);
-      }
-      
-      .current-question:hover::before {
-        left: 100%;
       }
       .helper {
         color: #666;
@@ -181,22 +72,19 @@
         color: #777;
         font-size: 0.9em;
       }
-      /* presence indicator with enhanced animations */
+      /* presence indicator */
       .presence-dot {
         width: 10px;
         height: 10px;
         border-radius: 50%;
         display: inline-block;
         margin-right: 8px;
-        transition: all var(--animation-fast);
       }
       .presence-on {
         background: #4caf50;
-        animation: pulse 2s ease-in-out infinite;
       }
       .presence-away {
         background: #ffc107;
-        animation: pulse 3s ease-in-out infinite;
       }
       .presence-off {
         background: #bbb;
@@ -204,45 +92,14 @@
       .student-away {
         opacity: 0.65;
         filter: grayscale(40%);
-        transition: all var(--animation-normal);
       }
       .student-focused {
         font-weight: 700;
-        animation: fadeIn var(--animation-normal);
       }
       .last-seen {
         font-size: 0.85em;
         color: #666;
         margin-left: 8px;
-      }
-      
-      /* Enhanced score item animations */
-      .score-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px;
-        margin: 8px 0;
-        background: linear-gradient(180deg, #fff, #f8f9fa);
-        border-radius: 8px;
-        border-left: 4px solid #4caf50;
-        transition: all var(--animation-fast);
-        animation: slideIn var(--animation-normal);
-      }
-      
-      .score-item:hover {
-        transform: translateX(4px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-      
-      /* Hide theme toggle by default */
-      .theme-toggle {
-        display: none;
-      }
-      
-      /* Show theme toggle only when logged in */
-      body.logged-in .theme-toggle {
-        display: flex;
       }
     </style>
   </head>
@@ -269,7 +126,7 @@
       <div class="card">
         <h3>Vraag Beheer</h3>
         <div id="status-area"></div>
-        <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div style="margin-top: 12px">
           <button id="btn-clear" class="btn-danger" style="display: none">
             Stop huidige vraag
           </button>
@@ -280,10 +137,8 @@
             href="#"
             target="_blank"
             style="display: none"
+            >Toon castscherm (voor projectie)</a
           >
-            <span class="material-icons" style="font-size: 16px; margin-right: 6px;">cast</span>
-            Toon castscherm
-          </a>
         </div>
         <div style="margin-top: 12px">
           <a id="stop-session" class="btn-danger" href="#" style="display: none"
@@ -432,7 +287,7 @@
           }
 
           document.getElementById("cast-link").href =
-            "cast.html?session=" + sessionId;
+            "cast.html?sessie=" + sessionId;
           document.getElementById("cast-link").style.display = "inline-block";
 
           // Show and wire up the Stop Session button when sessie is active
@@ -478,18 +333,6 @@
       }
 
       async function sendQuestion() {
-        // Check if View Transitions API is supported
-        if (document.startViewTransition) {
-          const transition = document.startViewTransition(() => {
-            return handleSendQuestion();
-          });
-          await transition.finished;
-        } else {
-          await handleSendQuestion();
-        }
-      }
-
-      async function handleSendQuestion() {
         try {
           const res = await fetch("/sessies/" + sessionId + "/send_question", {
             method: "POST",
@@ -507,10 +350,6 @@
           await loadSession();
           await refreshRecentAnswers();
           await refreshScoreboard();
-          
-          // Add animation to status area
-          const statusArea = document.getElementById("status-area");
-          statusArea.classList.add("fade-in");
         } catch (err) {
           console.error(err);
           alert("Fout bij versturen vraag");
@@ -860,7 +699,7 @@
           }
 
           document.getElementById("cast-link").href =
-            "cast.html?session=" + sessionId;
+            "cast.html?sessie=" + sessionId;
           document.getElementById("cast-link").style.display = "inline-block";
 
           // students
@@ -990,11 +829,10 @@
         es.addEventListener("update", (e) => {
           try {
             console.log("SSE update event:", e.data);
-            // Only apply session data to avoid duplicate calls
-            const d = JSON.parse(e.data);
-            if (d.sess) {
-              applySessionData(d);
-            }
+            loadSession();
+            refreshRecentAnswers();
+            refreshScoreboard();
+            refreshStudentList();
           } catch (err) {
             console.error("SSE update parse", err);
           }
@@ -1003,11 +841,7 @@
         es.addEventListener("question", (e) => {
           try {
             console.log("SSE question event:", e.data);
-            // Only apply session data to avoid duplicate calls
-            const d = JSON.parse(e.data);
-            if (d.sess) {
-              applySessionData(d);
-            }
+            loadSession();
           } catch (err) {
             console.error("SSE question parse", err);
           }
@@ -1016,7 +850,6 @@
         es.addEventListener("answer", (e) => {
           try {
             console.log("SSE answer event:", e.data);
-            // Only refresh specific components to avoid full reload
             refreshRecentAnswers();
             refreshScoreboard();
           } catch (err) {

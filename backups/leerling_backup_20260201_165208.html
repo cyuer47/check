@@ -9,281 +9,157 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-      /* Enhanced learner page styling with Material 3 Dark Purple */
+      /* Improved learner page styling */
       .question-card {
-        background: linear-gradient(135deg, var(--primary-container) 0%, var(--primary) 100%);
-        color: var(--on-primary);
-        padding: 32px 24px;
-        border-radius: var(--radius-xl);
+        background: linear-gradient(135deg, #5b3e99 0%, #7c4db6 100%);
+        color: #fff;
+        padding: 30px 20px;
+        border-radius: 18px;
         text-align: center;
-        box-shadow: var(--shadow-4);
-        position: relative;
-        overflow: hidden;
-        animation: fadeIn var(--animation-normal);
+        box-shadow: 0 12px 34px rgba(103, 80, 164, 0.18);
       }
-      
-      .question-card::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-        animation: shimmer 4s infinite;
-      }
-      
       .score-display {
-        background: var(--surface-container-high);
-        padding: 20px;
-        border-radius: var(--radius-lg);
+        background: linear-gradient(180deg, #fff, #fbfbff);
+        padding: 16px;
+        border-radius: 12px;
         text-align: center;
-        margin-bottom: 20px;
-        border: 1px solid var(--outline-variant);
-        box-shadow: var(--shadow-2);
-        animation: slideIn var(--animation-normal);
+        margin-bottom: 18px;
+        border: 1px solid rgba(103, 80, 164, 0.06);
       }
-      
       .score-display h3 {
-        margin: 0 0 8px 0;
-        color: var(--on-surface);
-        font-weight: 500;
+        margin: 0 0 6px 0;
       }
-      
       .score-display #score-display {
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--primary);
-        text-shadow: 0 0 20px color-mix(in srgb, var(--primary) 30%, transparent);
-      }
-      
-      .score-display #answer-count {
-        color: var(--on-surface-variant);
-        font-size: 14px;
-        margin-top: 4px;
+        font-size: 20px;
+        font-weight: 800;
+        color: #2b225c;
       }
 
       .answer-form {
-        background: var(--surface-container);
-        padding: 24px;
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--outline-variant);
-        margin-top: 20px;
-        box-shadow: var(--shadow-2);
-        position: relative;
-        overflow: hidden;
-        animation: slideIn var(--animation-normal);
+        background: #fff;
+        padding: 18px;
+        border-radius: 12px;
+        border: 1px solid rgba(103, 80, 164, 0.08);
+        margin-top: 18px;
+        box-shadow: 0 6px 18px rgba(103, 80, 164, 0.04);
       }
-      
-      .answer-form::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary) 10%, transparent), transparent);
-        transition: left var(--animation-slow);
-      }
-      
-      .answer-form:hover::before {
-        left: 100%;
-      }
-      
       .answer-form input {
         font-size: 18px;
-        padding: 16px;
+        padding: 14px;
         text-align: center;
-        border: 1px solid var(--outline);
-        border-radius: var(--radius-md);
+        border: 1px solid #e9e6f7;
+        border-radius: 10px;
         width: 100%;
         box-sizing: border-box;
-        background: var(--surface-container-low);
-        color: var(--on-surface);
-        transition: all var(--animation-normal);
       }
-      
       .answer-form input:focus {
-        border-color: var(--primary);
-        border-width: 2px;
-        box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 20%, transparent);
-        transform: translateY(-2px);
+        border-color: #6750a4;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(103, 80, 164, 0.08);
       }
-      
-      .answer-form input::placeholder {
-        color: var(--on-surface-variant);
-      }
-      
       .answer-form button {
         font-size: 18px;
-        padding: 16px 24px;
+        padding: 14px 20px;
         width: 100%;
-        margin-top: 16px;
-        color: var(--on-primary);
-        background: var(--primary);
-        font-weight: 500;
-        border-radius: var(--radius-lg);
+        margin-top: 12px;
+        color: white;
+        background: linear-gradient(135deg, #6b4bd1 0%, #7c5ee0 100%);
+        font-weight: 800;
+        border-radius: 12px;
         border: none;
         cursor: pointer;
-        box-shadow: var(--shadow-3);
-        transition: all var(--animation-normal);
-        position: relative;
-        overflow: hidden;
-        min-height: 48px;
+        box-shadow: 0 8px 26px rgba(103, 80, 164, 0.12);
       }
-      
-      .answer-form button::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        transition: width var(--animation-emphasized), height var(--animation-emphasized);
-      }
-      
       .answer-form button:hover {
-        background: color-mix(in srgb, var(--primary) 85%, black);
         transform: translateY(-2px);
-        box-shadow: var(--shadow-4);
-      }
-      
-      .answer-form button:active {
-        transform: translateY(0);
-      }
-      
-      .answer-form button:active::before {
-        width: 300px;
-        height: 300px;
       }
 
       .status-message {
-        padding: 16px 24px;
-        border-radius: var(--radius-lg);
-        margin: 16px 0;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin: 12px 0;
         text-align: center;
-        font-weight: 500;
-        animation: slideIn var(--animation-normal);
-        border-left: 4px solid;
+        font-weight: 700;
       }
-      
       .status-success {
-        background: var(--error-container);
-        color: var(--on-error-container);
-        border-left-color: var(--error);
+        background: #d4edda;
+        color: #155724;
       }
-      
       .status-error {
-        background: var(--error-container);
-        color: var(--on-error-container);
-        border-left-color: var(--error);
+        background: #f8d7da;
+        color: #721c24;
       }
-      
       .status-info {
-        background: var(--primary-container);
-        color: var(--on-primary-container);
-        border-left-color: var(--primary);
+        background: #d1ecf1;
+        color: #0c5460;
       }
 
       .waiting-screen {
         text-align: center;
-        padding: 48px 24px;
-        color: var(--on-surface-variant);
-        animation: fadeIn var(--animation-normal);
+        padding: 48px 20px;
+        color: #666;
       }
-      
       .spinner {
-        border: 4px solid var(--surface-container-low);
-        border-top: 4px solid var(--primary);
+        border: 4px solid #f3f3f4;
+        border-top: 4px solid #6750a4;
         border-radius: 50%;
         width: 48px;
         height: 48px;
-        animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
-        margin: 20px auto;
+        animation: spin 1s linear infinite;
+        margin: 16px auto;
       }
 
       .completed-screen {
         text-align: center;
-        padding: 32px 24px;
-        background: var(--primary-container);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--outline-variant);
-        color: var(--on-primary-container);
-        animation: scaleIn var(--animation-bounce);
-        box-shadow: var(--shadow-2);
+        padding: 28px 16px;
+        background: #f6e6ff;
+        border-radius: 12px;
+        border: 1px solid rgba(103, 80, 164, 0.08);
       }
 
       .recent-answers {
-        max-height: 300px;
+        max-height: 260px;
         overflow-y: auto;
-        margin-top: 16px;
-        padding-right: 8px;
+        margin-top: 12px;
       }
-      
       .answer-item {
-        padding: 16px;
-        margin: 12px 0;
-        background: var(--surface-container);
-        border-radius: var(--radius-md);
-        border-left: 4px solid var(--outline);
-        box-shadow: var(--shadow-1);
-        transition: all var(--animation-normal);
-        animation: slideIn var(--animation-normal);
-        color: var(--on-surface);
-      }
-      
-      .answer-item:hover {
-        transform: translateX(6px);
-        box-shadow: var(--shadow-3);
-        background: var(--surface-container-high);
-        border-left-color: var(--primary);
-      }
-      
-      .answer-item.new {
-        border-left-color: var(--primary);
-        animation: slideIn var(--animation-normal), glow 3s ease-in-out;
-        background: var(--primary-container);
-        color: var(--on-primary-container);
+        padding: 12px;
+        margin: 8px 0;
+        background: linear-gradient(180deg, #fff, #fbfbff);
+        border-radius: 10px;
+        border-left: 4px solid #eee;
+        box-shadow: 0 6px 18px rgba(43, 34, 92, 0.04);
       }
 
-      /* Hide theme toggle by default */
-      .theme-toggle {
-        display: none;
+      /* Logout button */
+      #logout-btn {
+        position: absolute;
+        right: 18px;
+        top: 18px;
       }
-      
-      /* Show theme toggle only when logged in */
-      body.logged-in .theme-toggle {
-        display: flex;
+      .logout-btn {
+        color: #d9534f;
+        font-weight: 700;
+        padding: 8px 12px;
+        border-radius: 8px;
       }
 
-      @media (max-width: 768px) {
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 520px) {
         .question-card {
-          padding: 24px 16px;
+          padding: 18px;
         }
-        
-        .answer-form {
-          padding: 20px;
-        }
-        
-        .answer-form input {
-          font-size: 16px;
-          padding: 14px;
-        }
-        
         .answer-form button {
-          font-size: 16px;
-          padding: 14px 20px;
-        }
-        
-        #logout-btn {
-          right: 16px;
-          top: 16px;
+          padding: 12px;
         }
       }
     </style>
@@ -305,20 +181,8 @@
           </div>
         </form>
       </div>
-        <div class="card" id="main-card" style="display: none">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div>
-              <h2 style="margin: 0; color: var(--primary); font-size: 24px; font-weight: 500;">
-                <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">school</span>
-                Overhooring
-              </h2>
-              <p id="student-name" style="margin: 4px 0 0 28px; color: var(--on-surface-variant); font-size: 14px;"></p>
-            </div>
-            <button id="logout-btn" class="btn-danger" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-full);">
-              <span class="material-icons" style="font-size: 16px;">logout</span>
-              Uitloggen
-            </button>
-          </div>
+      <div class="card" id="main-card" style="display: none">
+        <a href="#" id="logout-btn" class="logout-btn">Uitloggen</a>
         <div class="score-display">
           <div
             style="
@@ -360,7 +224,6 @@
             id="answer-input"
             placeholder="Typ hier je antwoord..."
           />
-          <div style="margin: 10px"></div>
           <button id="submit-btn" class="btn-primary">Verstuur Antwoord</button>
         </div>
         <div id="waiting-section" style="display: none">
@@ -482,22 +345,9 @@
         startPresenceHeartbeat();
       });
 
-      // Join flow with view transitions
+      // Join flow
       JOIN_FORM.addEventListener("submit", async (e) => {
         e.preventDefault();
-        
-        // Check if View Transitions API is supported
-        if (document.startViewTransition) {
-          const transition = document.startViewTransition(() => {
-            return handleJoinFlow(e);
-          });
-          await transition.finished;
-        } else {
-          await handleJoinFlow(e);
-        }
-      });
-
-      async function handleJoinFlow(e) {
         const form = e.target;
         const code = (form.join_klascode.value || "").toUpperCase().trim();
         const naam = (form.naam.value || "").trim();
@@ -532,15 +382,11 @@
           if (j.session_id) {
             startSSEStream(j.session_id);
           }
-          
-          // Add animation to main card
-          const mainCard = document.getElementById("main-card");
-          mainCard.classList.add("fade-in");
         } catch (err) {
           em.textContent = "Netwerkfout";
           em.style.display = "";
         }
-      }
+      });
 
       LOGOUT_BTN.addEventListener("click", (e) => {
         e.preventDefault();
