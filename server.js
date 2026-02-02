@@ -15,7 +15,11 @@ dotenv.config();
 const DEBUG_REQUESTS =
   process.env.DEBUG_REQUESTS === "1" || process.env.DEBUG === "true";
 
-const SECRET = process.env.SECRET || "supersecretkey";
+const SECRET = process.env.SECRET;
+if (!SECRET) {
+  console.error('FATAL: SECRET environment variable is required');
+  process.exit(1);
+}
 const PORT = process.env.PORT || 3000;
 // How many recorded violations before auto-ban (default: 1 = immediate ban)
 const VIOLATION_THRESHOLD = parseInt(
@@ -291,6 +295,9 @@ app.get("/sessies/:id/stream", async (req, res) => {
       "Access-Control-Allow-Headers": "Cache-Control",
     });
     
+    // Flush headers immediately to prevent buffering
+    res.flushHeaders();
+    
     // Send initial connection event
     res.write("event: connect\n");
     res.write("data: {\"status\":\"connected\"}\n\n");
@@ -359,8 +366,65 @@ app.post("/notify-session-update", express.json(), async (req, res) => {
   }
 });
 
-// Static files
-app.use(express.static(__dirname));
+// Static files with proper headers to prevent compression issues
+app.use(express.static(__dirname, {
+  maxAge: '1d', // Cache for 1 day
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    // Disable compression for problematic file types
+    if (path.endsWith('.css') || path.endsWith('.js') || path.endsWith('.ico') || path.includes('icon')) {
+      res.setHeader('Content-Encoding', 'identity');
+      res.removeHeader('Content-Encoding');
+    }
+    
+    // Set proper content types
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    } else if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    } else if (path.endsWith('.ico')) {
+      res.setHeader('Content-Type', 'image/x-icon');
+    } else if (path.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (path.endsWith('.svg')) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+    }
+    
+    // Prevent caching issues
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+    res.setHeader('Vary', 'Accept-Encoding');
+  }
+}));
+
+// Add fallback route for problematic files
+app.get('/assets/css/styles.css', (req, res) => {
+  const cssPath = path.join(__dirname, 'assets/css/styles.css');
+  if (fs.existsSync(cssPath)) {
+    res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.sendFile(cssPath);
+  } else {
+    res.status(404).send('CSS file not found');
+  }
+});
+
+app.get('/assets/img/logo2.png', (req, res) => {
+  const iconPath = path.join(__dirname, 'assets/img/logo2.png');
+  if (fs.existsSync(iconPath)) {
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.sendFile(iconPath);
+  } else {
+    res.status(404).send('Icon file not found');
+  }
+});
 
 // Quick ping endpoint to validate routing
 app.get("/ping", (req, res) => {

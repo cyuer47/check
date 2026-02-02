@@ -1,3 +1,49 @@
+# Environment variables
 .env
-/node_modules
-/.qodo
+
+# Dependencies
+node_modules/
+
+# IDE files
+.qodo
+.vscode/
+.idea/
+
+# Database files
+data.db
+data.db-*
+*.db
+*.db-*
+
+# Logs
+*.log
+server.err.log
+server.log
+logs/
+
+# File index
+file_index.json
+
+# Backup files
+backups/
+*.bak
+*.backup
+
+# Temporary files
+tmp/
+temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock

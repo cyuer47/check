@@ -1,14 +1,37 @@
 {
+  "name": "overhoorderjs",
+  "version": "1.0.0",
+  "description": "Educational quiz application for Dutch VO schools",
+  "main": "server.js",
   "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "migrate": "node scripts/migrate.js"
+  },
+  "keywords": [
+    "education",
+    "quiz",
+    "dutch",
+    "vo",
+    "sse",
+    "real-time"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.3",
-    "path": "^0.12.7",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
-    "url": "^0.11.4"
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
   }
 }
