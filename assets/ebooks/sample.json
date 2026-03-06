@@ -1,0 +1,13 @@
+{
+  "title": "Voorbeeldboek",
+  "chapters": [
+    {
+      "title": "Hoofdstuk 1: Introductie",
+      "content": "Dit is een voorbeeld van de inhoud van het eerste hoofdstuk."
+    },
+    {
+      "title": "Hoofdstuk 2: Verdere uitleg",
+      "content": "Hier wordt het tweede hoofdstuk beschreven met meer tekst."
+    }
+  ]
+}

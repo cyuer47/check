@@ -1,11 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
   <head>
     <meta charset="utf-8" />
     <title>Profiel - Overhoorder</title>
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="assets/img/logo2.png" />
   </head>
@@ -19,7 +27,11 @@
         "
       >
         <div class="chip">
-          <span class="material-icons" style="font-size: 16px; margin-right: 4px;">school</span>
+          <span
+            class="material-icons"
+            style="font-size: 16px; margin-right: 4px"
+            >school</span
+          >
           Overhoorder
         </div>
         <div class="profile-container">
@@ -49,11 +61,19 @@
             </div>
             <div class="divider" aria-hidden="true"></div>
             <a href="docent_settings.html" role="menuitem">
-              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">settings</span>
+              <span
+                class="material-icons"
+                style="font-size: 16px; margin-right: 8px"
+                >settings</span
+              >
               Instellingen
             </a>
             <a href="dashboard.html" role="menuitem">
-              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">dashboard</span>
+              <span
+                class="material-icons"
+                style="font-size: 16px; margin-right: 8px"
+                >dashboard</span
+              >
               Dashboard
             </a>
             <a
@@ -62,7 +82,11 @@
               class="logout logout-btn"
               role="menuitem"
             >
-              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">logout</span>
+              <span
+                class="material-icons"
+                style="font-size: 16px; margin-right: 8px"
+                >logout</span
+              >
               Uitloggen
             </a>
           </div>
@@ -73,13 +97,19 @@
 
       <div class="card">
         <h3>
-          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">person</span>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >person</span
+          >
           Profiel Informatie
         </h3>
         <div id="profile-info">
-          <div style="text-align: center; padding: 20px;">
+          <div style="text-align: center; padding: 20px">
             <div class="spinner"></div>
-            <p style="margin-top: 12px; color: var(--on-surface-variant);">Laden...</p>
+            <p style="margin-top: 12px; color: var(--on-surface-variant)">
+              Laden...
+            </p>
           </div>
         </div>
       </div>
@@ -88,28 +118,160 @@
 
       <div class="card">
         <h3>
-          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">search</span>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >group_add</span
+          >
+          Vrienden & Codes
+        </h3>
+
+        <div style="margin-bottom: 24px">
+          <h4 style="margin-top: 0">Mijn Codes</h4>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 12px;
+              margin-bottom: 16px;
+            "
+          >
+            <div
+              style="
+                background: var(--surface-container);
+                padding: 12px;
+                border-radius: 8px;
+              "
+            >
+              <div
+                style="
+                  font-size: 12px;
+                  color: var(--on-surface-variant);
+                  margin-bottom: 4px;
+                "
+              >
+                Vriendcode
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px">
+                <code
+                  id="friend-code"
+                  style="
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: var(--primary);
+                  "
+                  >---</code
+                >
+                <button
+                  id="reset-friend-code-btn"
+                  style="padding: 4px 8px; font-size: 12px"
+                >
+                  ↻
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="
+            border-top: 1px solid var(--outline-variant);
+            padding-top: 16px;
+            margin-bottom: 16px;
+          "
+        >
+          <h4 style="margin-top: 0">Vriendin Toevoegen</h4>
+          <div style="display: flex; gap: 8px">
+            <input
+              type="text"
+              id="friend-code-input"
+              placeholder="Voer vriendcode in..."
+              style="flex: 1"
+            />
+            <button id="add-friend-btn" style="padding: 8px 16px">
+              Toevoegen
+            </button>
+          </div>
+          <div
+            id="add-friend-message"
+            style="margin-top: 8px; font-size: 12px"
+          ></div>
+        </div>
+
+        <div>
+          <h4 style="margin-top: 0">Mijn Vrienden</h4>
+          <div
+            id="friends-list"
+            style="display: flex; flex-direction: column; gap: 8px"
+          >
+            <div
+              style="
+                text-align: center;
+                padding: 20px;
+                color: var(--on-surface-variant);
+              "
+            >
+              Laden...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 16px"></div>
+
+      <div class="card">
+        <h3>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >search</span
+          >
           Andere Profielen Zoeken
         </h3>
         <p class="helper">Zoek naar elk publiek profiel!</p>
-        <div style="position: relative;">
-          <span class="material-icons" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--on-surface-variant); font-size: 20px;">search</span>
-          <input type="text" id="search" placeholder="Zoek een docent" style="padding-left: 44px;" />
+        <div style="position: relative">
+          <span
+            class="material-icons"
+            style="
+              position: absolute;
+              left: 12px;
+              top: 50%;
+              transform: translateY(-50%);
+              color: var(--on-surface-variant);
+              font-size: 20px;
+            "
+            >search</span
+          >
+          <input
+            type="text"
+            id="search"
+            placeholder="Zoek een docent"
+            style="padding-left: 44px"
+          />
         </div>
-        <ul id="search-results" style="list-style: none; padding: 0; margin: 12px 0 0 0;"></ul>
+        <ul
+          id="search-results"
+          style="list-style: none; padding: 0; margin: 12px 0 0 0"
+        ></ul>
       </div>
 
       <div style="height: 16px"></div>
 
       <div class="card">
         <h3>
-          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">analytics</span>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >analytics</span
+          >
           Statistieken
         </h3>
         <div id="profile-stats">
-          <div style="text-align: center; padding: 20px;">
+          <div style="text-align: center; padding: 20px">
             <div class="spinner"></div>
-            <p style="margin-top: 12px; color: var(--on-surface-variant);">Laden...</p>
+            <p style="margin-top: 12px; color: var(--on-surface-variant)">
+              Laden...
+            </p>
           </div>
         </div>
       </div>
@@ -118,13 +280,19 @@
 
       <div class="card">
         <h3>
-          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">class</span>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >class</span
+          >
           Mijn Klassen
         </h3>
         <div id="profile-classes">
-          <div style="text-align: center; padding: 20px;">
+          <div style="text-align: center; padding: 20px">
             <div class="spinner"></div>
-            <p style="margin-top: 12px; color: var(--on-surface-variant);">Laden...</p>
+            <p style="margin-top: 12px; color: var(--on-surface-variant)">
+              Laden...
+            </p>
           </div>
         </div>
       </div>
@@ -133,13 +301,19 @@
 
       <div class="card">
         <h3>
-          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">quiz</span>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >quiz</span
+          >
           Recente Vragenlijsten
         </h3>
         <div id="recent-vragenlijsten">
-          <div style="text-align: center; padding: 20px;">
+          <div style="text-align: center; padding: 20px">
             <div class="spinner"></div>
-            <p style="margin-top: 12px; color: var(--on-surface-variant);">Laden...</p>
+            <p style="margin-top: 12px; color: var(--on-surface-variant)">
+              Laden...
+            </p>
           </div>
         </div>
       </div>
@@ -148,7 +322,8 @@
     <script>
       const token = localStorage.getItem("token");
       if (!token) {
-        window.location = "login.html?redirecturi=" + encodeURIComponent("profile.html");
+        window.location =
+          "login.html?redirecturi=" + encodeURIComponent("profile.html");
       }
 
       // Profile dropdown functionality
@@ -156,7 +331,7 @@
         const container = document.querySelector(".profile-container");
         const btn = document.getElementById("profileBtn");
         const menu = document.getElementById("profileMenu");
-        
+
         if (!container || !btn || !menu) return;
 
         function openMenu() {
@@ -165,7 +340,7 @@
           const first = menu.querySelector('[role="menuitem"]');
           if (first) first.focus();
         }
-        
+
         function closeMenu(opts = { focusButton: true }) {
           container.classList.remove("active");
           btn.setAttribute("aria-expanded", "false");
@@ -183,18 +358,18 @@
             const menuEmail = document.getElementById("menu-email");
             const avatar = document.getElementById("avatar");
             const profileName = document.getElementById("profile-name");
-            
+
             if (menuAvatar && avatar && avatar.src) {
               menuAvatar.src = avatar.src;
             } else {
               menuAvatar.src = "assets/img/logo2.png";
             }
-            
+
             if (menuName && profileName) {
               menuName.textContent = profileName.textContent || "Docent";
             }
           } catch (e) {
-            console.error('Error populating menu header:', e);
+            console.error("Error populating menu header:", e);
           }
         }
 
@@ -225,7 +400,7 @@
             openMenu();
           }
         });
-        
+
         menu.addEventListener("keydown", (e) => {
           const items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
           const idx = items.indexOf(document.activeElement);
@@ -247,12 +422,14 @@
         });
 
         // Logout functionality
-        document.getElementById("logout-link").addEventListener("click", (e) => {
-          e.preventDefault();
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          window.location = "login.html";
-        });
+        document
+          .getElementById("logout-link")
+          .addEventListener("click", (e) => {
+            e.preventDefault();
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            window.location = "login.html";
+          });
       });
 
       // Load profile data
@@ -264,25 +441,25 @@
           });
           if (!dashboardRes.ok) throw new Error("Fetch dashboard data failed");
           const dashboardData = await dashboardRes.json();
-          
+
           // Store dashboard data globally
           window.dashboardData = dashboardData;
-          
+
           // Then load profile data
           const res = await fetch("/profile", {
             headers: { Authorization: "Bearer " + token },
           });
           if (!res.ok) throw new Error("Fetch profile failed");
           const data = await res.json();
-          
+
           // Update profile button
           const profileName = document.getElementById("profile-name");
           const avatar = document.getElementById("avatar");
-          
+
           if (profileName) {
             profileName.textContent = data.profile.naam || "Docent";
           }
-          
+
           if (avatar) {
             if (data.profile.avatar) {
               avatar.src = data.profile.avatar;
@@ -292,17 +469,17 @@
               avatar.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(hash)}`;
             }
           }
-          
+
           // Update profile info
           updateProfileInfo(data.profile);
-          
+
           // Load other sections using available dashboard data
           await Promise.all([
             loadStats(),
             loadClasses(),
-            loadRecentVragenlijsten()
+            loadRecentVragenlijsten(),
+            loadCodesAndFriends(),
           ]);
-          
         } catch (err) {
           console.error("Error loading profile:", err);
           document.getElementById("profile-info").innerHTML = `
@@ -321,32 +498,42 @@
             <img id="profile-avatar" src="${profile.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(profile.email || profile.naam)}`}" 
                  alt="Profiel" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary);">
             <div>
-              <h3 style="margin: 0; color: var(--primary); font-size: 24px;">${escapeHtml(profile.naam || 'Onbekend')}</h3>
-              <p style="margin: 4px 0; color: var(--on-surface-variant);">${escapeHtml(profile.email || '')}</p>
+              <h3 style="margin: 0; color: var(--primary); font-size: 24px;">${escapeHtml(profile.naam || "Onbekend")}</h3>
+              <p style="margin: 4px 0; color: var(--on-surface-variant);">${escapeHtml(profile.email || "")}</p>
               <div style="margin-top: 8px;">
-                <span class="chip" style="background: ${profile.is_public ? 'var(--gradient-primary)' : 'var(--gradient-secondary)'}; color: var(--on-primary);">
-                  <span class="material-icons" style="font-size: 14px; margin-right: 4px;">${profile.is_public ? 'public' : 'lock'}</span>
-                  ${profile.is_public ? 'Openbaar profiel' : 'Privé profiel'}
+                <span class="chip" style="background: ${profile.is_public ? "var(--gradient-primary)" : "var(--gradient-secondary)"}; color: var(--on-primary);">
+                  <span class="material-icons" style="font-size: 14px; margin-right: 4px;">${profile.is_public ? "public" : "lock"}</span>
+                  ${profile.is_public ? "Openbaar profiel" : "Privé profiel"}
                 </span>
               </div>
             </div>
           </div>
           
-          ${profile.vakken ? `
+          ${
+            profile.vakken
+              ? `
           <div style="margin-bottom: 16px;">
             <h4 style="margin: 0 0 8px 0; color: var(--on-surface); font-size: 16px;">
               <span class="material-icons" style="font-size: 16px; margin-right: 4px; vertical-align: middle;">school</span>
               Vakken
             </h4>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              ${profile.vakken.split(',').map(vak => 
-                `<span class="chip" style="background: var(--gradient-tertiary); color: var(--on-tertiary);">${escapeHtml(vak.trim())}</span>`
-              ).join('')}
+              ${profile.vakken
+                .split(",")
+                .map(
+                  (vak) =>
+                    `<span class="chip" style="background: var(--gradient-tertiary); color: var(--on-tertiary);">${escapeHtml(vak.trim())}</span>`,
+                )
+                .join("")}
             </div>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
           
-          ${profile.bio ? `
+          ${
+            profile.bio
+              ? `
           <div style="margin-bottom: 16px;">
             <h4 style="margin: 0 0 8px 0; color: var(--on-surface); font-size: 16px;">
               <span class="material-icons" style="font-size: 16px; margin-right: 4px; vertical-align: middle;">description</span>
@@ -354,7 +541,9 @@
             </h4>
             <p style="margin: 0; color: var(--on-surface-variant); line-height: 1.5;">${escapeHtml(profile.bio)}</p>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
           
           <div style="display: flex; gap: 12px; margin-top: 20px;">
             <a href="docent_settings.html" class="btn-primary" style="display: flex; align-items: center; gap: 6px;">
@@ -376,7 +565,7 @@
           if (!data) {
             throw new Error("No dashboard data available");
           }
-          
+
           const statsContainer = document.getElementById("profile-stats");
           statsContainer.innerHTML = `
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
@@ -416,7 +605,7 @@
           if (!data || !data.klassen) {
             throw new Error("No dashboard data available");
           }
-          
+
           const classesContainer = document.getElementById("profile-classes");
           if (!data.klassen || data.klassen.length === 0) {
             classesContainer.innerHTML = `
@@ -427,26 +616,35 @@
             `;
             return;
           }
-          
+
           classesContainer.innerHTML = `
             <div style="display: grid; gap: 12px;">
-              ${data.klassen.slice(0, 5).map(klas => `
+              ${data.klassen
+                .slice(0, 5)
+                .map(
+                  (klas) => `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--gradient-surface); border-radius: var(--radius-lg);">
                   <div>
                     <div style="font-weight: 500; color: var(--on-surface);">${escapeHtml(klas.naam)}</div>
-                    <div style="font-size: 14px; color: var(--on-surface-variant);">Code: ${escapeHtml(klas.klascode || '')}</div>
+                    <div style="font-size: 14px; color: var(--on-surface-variant);">Code: ${escapeHtml(klas.klascode || "")}</div>
                   </div>
                   <a href="manage_klas.html?klas=${klas.id}" class="btn-secondary small">
                     <span class="material-icons" style="font-size: 14px; margin-right: 4px;">manage</span>
                     Beheer
                   </a>
                 </div>
-              `).join('')}
-              ${data.klassen.length > 5 ? `
+              `,
+                )
+                .join("")}
+              ${
+                data.klassen.length > 5
+                  ? `
                 <div style="text-align: center; padding: 12px;">
                   <a href="dashboard.html" class="btn-text">Bekijk alle ${data.klassen.length} klassen →</a>
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
           `;
         } catch (err) {
@@ -467,8 +665,10 @@
           if (!data || !data.biblio_lijsten) {
             throw new Error("No dashboard data available");
           }
-          
-          const vragenlijstenContainer = document.getElementById("recent-vragenlijsten");
+
+          const vragenlijstenContainer = document.getElementById(
+            "recent-vragenlijsten",
+          );
           if (!data.biblio_lijsten || data.biblio_lijsten.length === 0) {
             vragenlijstenContainer.innerHTML = `
               <p style="text-align: center; color: var(--on-surface-variant); padding: 20px;">
@@ -478,15 +678,18 @@
             `;
             return;
           }
-          
+
           vragenlijstenContainer.innerHTML = `
             <div style="display: grid; gap: 12px;">
-              ${data.biblio_lijsten.slice(0, 5).map(vragenlijst => `
+              ${data.biblio_lijsten
+                .slice(0, 5)
+                .map(
+                  (vragenlijst) => `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--gradient-surface); border-radius: var(--radius-lg);">
                   <div>
                     <div style="font-weight: 500; color: var(--on-surface);">${escapeHtml(vragenlijst.naam)}</div>
                     <div style="font-size: 14px; color: var(--on-surface-variant);">
-                      Bibliotheek • ${vragenlijst.licentie_type || 'gratis'}
+                      Bibliotheek • ${vragenlijst.licentie_type || "gratis"}
                     </div>
                   </div>
                   <a href="#" class="btn-secondary small" onclick="alert('Bibliotheek vragenlijst bekijken functie wordt ontwikkelt')">
@@ -494,12 +697,18 @@
                     Bekijken
                   </a>
                 </div>
-              `).join('')}
-              ${data.biblio_lijsten.length > 5 ? `
+              `,
+                )
+                .join("")}
+              ${
+                data.biblio_lijsten.length > 5
+                  ? `
                 <div style="text-align: center; padding: 12px;">
                   <a href="dashboard.html" class="btn-text">Bekijk alle ${data.biblio_lijsten.length} vragenlijsten →</a>
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
           `;
         } catch (err) {
@@ -511,6 +720,140 @@
             </p>
           `;
         }
+      }
+
+      async function loadCodesAndFriends() {
+        try {
+          // Load codes
+          const codesRes = await fetch("/my-codes", {
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (codesRes.ok) {
+            const codesData = await codesRes.json();
+            document.getElementById("friend-code").textContent =
+              codesData.friend_code || "---";
+          }
+
+          // Load friends
+          const friendsRes = await fetch("/friends", {
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (friendsRes.ok) {
+            const friendsData = await friendsRes.json();
+            const friendsList = document.getElementById("friends-list");
+
+            if (!friendsData.friends || friendsData.friends.length === 0) {
+              friendsList.innerHTML = `
+                <p style="text-align: center; padding: 20px; color: var(--on-surface-variant);">
+                  Je hebt nog geen vrienden. Voeg er een toe met hun vriendcode!
+                </p>
+              `;
+            } else {
+              friendsList.innerHTML = friendsData.friends
+                .map(
+                  (friend) => `
+                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--gradient-surface); border-radius: 8px;">
+                  <img src="${friend.avatar ? friend.avatar : `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(friend.email)}`}" 
+                       alt="${escapeHtml(friend.naam)}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                  <div style="flex: 1;">
+                    <div style="font-weight: 500;">${escapeHtml(friend.naam)}</div>
+                    <div style="font-size: 12px; color: var(--on-surface-variant);">${escapeHtml(friend.email)}</div>
+                  </div>
+                </div>
+              `,
+                )
+                .join("");
+            }
+          }
+        } catch (err) {
+          console.error("Error loading codes and friends:", err);
+        }
+      }
+
+      // Event listeners for buttons
+      document.addEventListener("DOMContentLoaded", () => {
+        // Reset friend code button
+        const resetFriendBtn = document.getElementById("reset-friend-code-btn");
+        if (resetFriendBtn) {
+          resetFriendBtn.addEventListener("click", async () => {
+            if (!confirm("Weet je zeker dat je je vriendcode wilt resetten?"))
+              return;
+            try {
+              const res = await fetch("/reset-friend-code", {
+                method: "POST",
+                headers: {
+                  Authorization: "Bearer " + token,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({}),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                document.getElementById("friend-code").textContent =
+                  data.friend_code;
+                showToast("Vriendcode gereset!");
+              } else {
+                showToast("Fout bij resetten van vriendcode");
+              }
+            } catch (err) {
+              console.error(err);
+              showToast("Fout bij resetten van vriendcode");
+            }
+          });
+        }
+
+        // Add friend button
+        const addFriendBtn = document.getElementById("add-friend-btn");
+        const friendCodeInput = document.getElementById("friend-code-input");
+        if (addFriendBtn && friendCodeInput) {
+          addFriendBtn.addEventListener("click", async () => {
+            const code = friendCodeInput.value.trim().toUpperCase();
+            if (!code) {
+              showToast("Voer een vriendcode in");
+              return;
+            }
+            try {
+              const res = await fetch("/add-friend", {
+                method: "POST",
+                headers: {
+                  Authorization: "Bearer " + token,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ friend_code: code }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                friendCodeInput.value = "";
+                showToast("Vriend " + data.friend.naam + " toegevoegd!");
+                loadCodesAndFriends();
+              } else {
+                const error = await res.json();
+                showToast(error.error || "Fout bij toevoegen van vriend");
+              }
+            } catch (err) {
+              console.error(err);
+              showToast("Fout bij toevoegen van vriend");
+            }
+          });
+        }
+      });
+
+      function showToast(message) {
+        const toast = document.createElement("div");
+        toast.style.cssText = `
+          position: fixed;
+          bottom: 20px;
+          left: 20px;
+          background: var(--primary);
+          color: var(--on-primary);
+          padding: 16px 24px;
+          border-radius: 8px;
+          z-index: 10000;
+          animation: slideUp 0.3s ease;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
       }
 
       function escapeHtml(s) {
@@ -530,7 +873,7 @@
 
       // Load profile when page loads
       loadProfile();
-      
+
       // Search functionality
       let searchTimer;
       document.getElementById("search").addEventListener("input", (e) => {
@@ -546,13 +889,14 @@
             const data = await res.json();
             ul.innerHTML = "";
             if (!data || data.length === 0) {
-              ul.innerHTML = "<li style='padding: 12px; color: var(--on-surface-variant); text-align: center;'>Geen resultaten gevonden.</li>";
+              ul.innerHTML =
+                "<li style='padding: 12px; color: var(--on-surface-variant); text-align: center;'>Geen resultaten gevonden.</li>";
               return;
             }
             data.forEach((p) => {
               const li = document.createElement("li");
               li.style.margin = "8px 0";
-              
+
               const a = document.createElement("a");
               a.href = "#"; // We'll handle this with JavaScript
               a.style.cssText = `
@@ -566,30 +910,35 @@
                 color: var(--on-surface);
                 transition: all var(--animation-normal);
               `;
-              
+
               // Create avatar
               const avatar = document.createElement("img");
-              avatar.src = p.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(p.email || p.naam)}`;
-              avatar.style.cssText = "width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);";
+              avatar.src =
+                p.avatar ||
+                `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(p.email || p.naam)}`;
+              avatar.style.cssText =
+                "width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);";
               avatar.alt = "Avatar";
-              
+
               // Create info container
               const info = document.createElement("div");
               info.style.cssText = "flex: 1;";
-              
+
               // Name
               const name = document.createElement("div");
-              name.style.cssText = "font-weight: 500; color: var(--on-surface); margin-bottom: 4px;";
+              name.style.cssText =
+                "font-weight: 500; color: var(--on-surface); margin-bottom: 4px;";
               name.textContent = p.naam || "Onbekend";
-              
+
               // Badge/info
               const badge = document.createElement("div");
-              badge.style.cssText = "font-size: 14px; color: var(--on-surface-variant);";
+              badge.style.cssText =
+                "font-size: 14px; color: var(--on-surface-variant);";
               badge.textContent = p.badge || p.email || "";
-              
+
               info.appendChild(name);
               info.appendChild(badge);
-              
+
               // View profile button
               const viewBtn = document.createElement("div");
               viewBtn.innerHTML = `<span class="material-icons" style="font-size: 16px;">person</span>`;
@@ -604,43 +953,44 @@
                 border-radius: 50%;
                 font-size: 12px;
               `;
-              
+
               a.appendChild(avatar);
               a.appendChild(info);
               a.appendChild(viewBtn);
-              
+
               // Add hover effect
               a.addEventListener("mouseenter", () => {
                 a.style.background = "var(--gradient-elevated)";
                 a.style.transform = "translateY(-1px)";
                 a.style.boxShadow = "var(--shadow-2)";
               });
-              
+
               a.addEventListener("mouseleave", () => {
                 a.style.background = "var(--gradient-surface)";
                 a.style.transform = "translateY(0)";
                 a.style.boxShadow = "none";
               });
-              
+
               // Handle click to view profile
               a.addEventListener("click", (e) => {
                 e.preventDefault();
                 viewOtherProfile(p.id);
               });
-              
+
               li.appendChild(a);
               ul.appendChild(li);
             });
           } catch (err) {
             console.error(err);
-            ul.innerHTML = "<li style='padding: 12px; color: var(--error); text-align: center;'>Fout bij zoeken.</li>";
+            ul.innerHTML =
+              "<li style='padding: 12px; color: var(--error); text-align: center;'>Fout bij zoeken.</li>";
           }
         }, 250);
       });
-      
+
       // Function to view other profile
       function viewOtherProfile(userId) {
-        // For now, we'll show a message. In a real implementation, 
+        // For now, we'll show a message. In a real implementation,
         // you might navigate to a different page or show a modal
         const resultsContainer = document.getElementById("search-results");
         resultsContainer.innerHTML = `
@@ -649,7 +999,7 @@
             Profiel bekijken functie wordt ontwikkeld. User ID: ${userId}
           </li>
         `;
-        
+
         // Clear search after 3 seconds
         setTimeout(() => {
           resultsContainer.innerHTML = "";

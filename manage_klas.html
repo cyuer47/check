@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
   <head>
     <meta charset="utf-8" />
@@ -70,11 +70,7 @@
       <div class="card">
         <h3>Leerlingen</h3>
         <ul id="leerlingen-list"></ul>
-        <button
-          class="btn-danger"
-          onclick="deleteAllStudents()"
-          style="margin-top: 12px"
-        >
+        <button class="btn-danger mt-12" onclick="deleteAllStudents()">
           Verwijder alle leerlingen
         </button>
       </div>
@@ -87,18 +83,51 @@
           <input
             id="vragenlijst-naam"
             placeholder="Naam vragenlijst"
-            style="width: calc(100% - 110px); margin-bottom: 12px"
+            class="mb-12"
+            style="width: calc(100% - 110px)"
             required
           />
           <button class="btn-primary" type="submit">Aanmaken</button>
         </form>
+        <div class="mt-12"></div>
+        <div
+          style="
+            border-top: 1px solid var(--outline-variant);
+            padding-top: 12px;
+          "
+        >
+          <h4>Upload vragenlijst (CSV)</h4>
+          <p class="helper">
+            Gebruik het template (Vraag,Antwoord). Geef een naam en upload.
+          </p>
+          <input
+            id="upload-vragenlijst-naam"
+            placeholder="Naam nieuwe vragenlijst"
+            style="width: 100%; margin-bottom: 8px"
+          />
+          <div style="display: flex; gap: 8px; align-items: center">
+            <input
+              type="file"
+              id="upload-vragenlijst-file"
+              accept=".csv,text/csv"
+              style="flex: 1"
+            />
+            <button id="upload-vragenlijst-btn" class="btn-primary">
+              Uploaden
+            </button>
+          </div>
+        </div>
         <div id="vragenlijsten-list"></div>
       </div>
 
       <div style="height: 16px"></div>
 
       <div class="card">
-        <button class="btn-danger" onclick="deleteKlas()" style="width: 100%">
+        <button
+          class="btn-danger mt-12"
+          onclick="deleteKlas()"
+          style="width: 100%"
+        >
           Verwijder deze klas
         </button>
       </div>
@@ -130,9 +159,8 @@
           }
 
           const data = await res.json();
-          document.getElementById(
-            "klas-title"
-          ).textContent = `Beheer: ${data.klas.naam}`;
+          document.getElementById("klas-title").textContent =
+            `Beheer: ${data.klas.naam}`;
 
           // Leerlingen
           const lList = document.getElementById("leerlingen-list");
@@ -200,7 +228,7 @@
               ">": "&gt;",
               '"': "&quot;",
               "'": "&#39;",
-            }[c])
+            })[c],
         );
       }
 
@@ -293,7 +321,7 @@
       async function deleteKlas() {
         if (
           !confirm(
-            "Weet je zeker dat je deze klas wilt verwijderen? Alle leerlingen, vragen en resultaten zullen ook worden verwijderd."
+            "Weet je zeker dat je deze klas wilt verwijderen? Alle leerlingen, vragen en resultaten zullen ook worden verwijderd.",
           )
         )
           return;
@@ -317,6 +345,89 @@
       }
 
       loadKlas();
+
+      // Upload vragenlijst (CSV) handler
+      document
+        .getElementById("upload-vragenlijst-btn")
+        .addEventListener("click", async (e) => {
+          e.preventDefault();
+          const token = localStorage.getItem("token");
+          if (!token) return (window.location = "login.html");
+
+          const fileEl = document.getElementById("upload-vragenlijst-file");
+          const nameEl = document.getElementById("upload-vragenlijst-naam");
+          if (!fileEl.files[0]) return alert("Selecteer een CSV bestand");
+          const naam = (nameEl.value || "").trim();
+          if (!naam) return alert("Geef een naam voor de vragenlijst");
+
+          try {
+            const res = await fetch("/vragenlijst", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + token,
+              },
+              body: JSON.stringify({ klas_id: parseInt(klasId), naam }),
+            });
+            if (!res.ok) throw new Error("Kon vragenlijst niet aanmaken");
+            const jr = await res.json();
+            const newId = jr.id;
+
+            // parse CSV and add vragen
+            const text = await fileEl.files[0].text();
+            const lines = text
+              .split("\n")
+              .map((l) => l.trim())
+              .filter((l) => l);
+            if (lines.length < 2)
+              throw new Error("CSV moet minimaal header + 1 rij bevatten");
+            const header = lines[0]
+              .split(",")
+              .map((h) => h.trim().toLowerCase());
+            if (header[0] !== "vraag" || header[1] !== "antwoord")
+              throw new Error('CSV header moet "Vraag,Antwoord" zijn');
+
+            let imported = 0;
+            let errors = [];
+            for (let i = 1; i < lines.length; i++) {
+              const parts = lines[i]
+                .split(",")
+                .slice(0, 2)
+                .map((s) => s.trim().replace(/^"(.*)"$/, "$1"));
+              const vraag = parts[0] || "";
+              const antwoord = parts[1] || "";
+              if (!vraag || !antwoord) {
+                errors.push(`Rij ${i + 1} ontbreekt`);
+                continue;
+              }
+              try {
+                const r = await fetch(`/vragenlijst/${newId}/vraag`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + token,
+                  },
+                  body: JSON.stringify({ vraag, antwoord }),
+                });
+                if (!r.ok) {
+                  const er = await r.json().catch(() => ({}));
+                  errors.push(`Rij ${i + 1}: ${er.error || r.status}`);
+                } else imported++;
+              } catch (err) {
+                errors.push(`Rij ${i + 1}: ${err.message}`);
+              }
+            }
+
+            alert(
+              `Gereed. ${imported} vragen geïmporteerd.${errors.length ? "\nFouten:\n" + errors.join("\n") : ""}`,
+            );
+            fileEl.value = "";
+            nameEl.value = "";
+            loadKlas();
+          } catch (err) {
+            alert("Fout bij upload: " + err.message);
+          }
+        });
     </script>
   </body>
 </html>

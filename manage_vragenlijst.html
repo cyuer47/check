@@ -1,14 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
   <head>
     <meta charset="utf-8" />
     <title>Vragenlijst beheren</title>
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link
-      rel="icon"
-      type="image/x-icon"
-      href="https://overhoren.ivenboxem.nl/assets/img/logo2.png"
-    />
+    <link rel="icon" type="image/x-icon" href="assets/img/logo2.png" />
     <style>
       ul.vraag-lijst {
         list-style: none;
@@ -82,21 +78,34 @@
   </head>
   <body>
     <div class="container">
-      <a id="back-link" class="btn-text">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          height="24px"
-          viewBox="0 -960 960 960"
-          width="24px"
-          fill="var(--svg-icons)"
+      <div class="row mb-20">
+        <a id="back-link" class="btn-text">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            height="24px"
+            viewBox="0 -960 960 960"
+            width="24px"
+            fill="var(--svg-icons)"
+          >
+            <path
+              d="m368-417 202 202-90 89-354-354 354-354 90 89-202 202h466v126H368Z"
+            />
+          </svg>
+        </a>
+        <div class="flex-grow">
+          <h1 class="app-title" id="lijst-naam"></h1>
+          <div class="helper" id="klas-naam" class="mt-4"></div>
+        </div>
+        <button
+          id="share-header-btn"
+          title="Delen met vrienden"
+          class="btn-secondary row"
         >
-          <path
-            d="m368-417 202 202-90 89-354-354 354-354 90 89-202 202h466v126H368Z"
-          />
-        </svg>
-      </a>
-      <h1 class="app-title" id="lijst-naam"></h1>
-      <div class="helper" id="klas-naam"></div>
+          🔗 Delen
+        </button>
+      </div>
+
+      <!-- Quick Add Vraag Card -->
       <div class="card">
         <h3>Vraag toevoegen</h3>
         <form id="add-vraag-form">
@@ -107,13 +116,196 @@
           <button class="btn-primary" type="submit">Opslaan</button>
         </form>
       </div>
-      <div style="height: 16px"></div>
+      <div style="height: 12px"></div>
+
+      <!-- Vragen List (Primary Content) -->
       <div class="card">
-        <h3>Bestaande vragen</h3>
+        <h3>Vragen ({{ count }})</h3>
         <p class="helper" id="geen-vragen" style="display: none">
           Nog geen vragen in deze lijst.
         </p>
         <ul class="vraag-lijst" id="vraag-lijst"></ul>
+      </div>
+      <div style="height: 12px"></div>
+
+      <!-- Sharing Section Header -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+        <!-- Share with Friends Card -->
+        <div class="card">
+          <h3>Delen met Vrienden</h3>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 12px;
+            "
+          >
+            <input type="checkbox" id="share-with-friends" />
+            <label
+              for="share-with-friends"
+              style="margin: 0; cursor: pointer; flex: 1"
+              >Zichtbaar voor vrienden</label
+            >
+          </div>
+          <a
+            href="profile.html"
+            id="manage-friends-link"
+            class="btn-secondary"
+            style="
+              display: inline-block;
+              padding: 6px 10px;
+              text-decoration: none;
+              font-size: 13px;
+            "
+          >
+            Vrienden beheren →
+          </a>
+          <div
+            id="shared-with-friends"
+            style="
+              display: none;
+              margin-top: 12px;
+              padding: 10px;
+              background: var(--surface-container);
+              border-radius: 8px;
+            "
+          >
+            <p class="helper" style="margin: 0 0 8px 0; font-size: 12px">
+              Gedeeld met:
+            </p>
+            <div
+              id="friends-shared-list"
+              style="display: flex; flex-direction: column; gap: 6px"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Share via Link Card -->
+        <div class="card">
+          <h3>Delen via Link</h3>
+          <p class="helper" style="font-size: 12px">
+            Maak een deelbare link (optioneel met wachtwoord)
+          </p>
+          <div style="display: flex; gap: 6px; margin: 10px 0">
+            <input
+              type="password"
+              id="link-password"
+              placeholder="Wachtwoord (opt)"
+              style="flex: 1; font-size: 12px"
+            />
+            <button
+              id="create-link-btn"
+              class="btn-primary"
+              style="white-space: nowrap"
+            >
+              Link Maken
+            </button>
+          </div>
+          <div
+            id="links-list"
+            style="display: flex; flex-direction: column; gap: 6px"
+          >
+            <div
+              style="
+                text-align: center;
+                padding: 12px;
+                color: var(--on-surface-variant);
+                font-size: 12px;
+              "
+            >
+              Laden...
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="height: 12px"></div>
+
+      <!-- CSV Section -->
+      <div class="card">
+        <h3>CSV Import / Export</h3>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+          "
+        >
+          <button
+            id="download-template-btn"
+            class="btn-secondary"
+            style="
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              justify-content: center;
+              font-size: 13px;
+            "
+          >
+            📋 Template
+          </button>
+          <button
+            id="export-csv-btn"
+            class="btn-secondary"
+            style="
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              justify-content: center;
+              font-size: 13px;
+            "
+          >
+            📥 Exporteren
+          </button>
+        </div>
+        <div
+          style="
+            border-top: 1px solid var(--outline-variant);
+            padding-top: 10px;
+          "
+        >
+          <label for="csv-import" style="font-size: 13px">CSV Importeren</label>
+          <div style="display: flex; gap: 6px; margin-top: 6px">
+            <input
+              type="file"
+              id="csv-import"
+              accept=".csv, text/csv"
+              style="flex: 1; font-size: 12px"
+            />
+            <button
+              id="import-csv-btn"
+              class="btn-primary"
+              style="white-space: nowrap"
+            >
+              Importeren
+            </button>
+          </div>
+          <div
+            id="csv-import-errors"
+            style="
+              margin-top: 8px;
+              display: none;
+              padding: 10px;
+              background: var(--error-container);
+              border-radius: 6px;
+              color: var(--on-error-container);
+              font-size: 12px;
+            "
+          ></div>
+          <div
+            id="csv-import-success"
+            style="
+              margin-top: 8px;
+              display: none;
+              padding: 10px;
+              background: var(--success-container);
+              border-radius: 6px;
+              color: var(--on-success-container);
+              font-size: 12px;
+            "
+          ></div>
+        </div>
       </div>
     </div>
     <script>
@@ -144,7 +336,7 @@
               ">": "&gt;",
               "'": "&#39;",
               '"': "&quot;",
-            }[c])
+            })[c],
         );
       }
       async function fetchLijst() {
@@ -184,10 +376,10 @@
         <form class="edit-form" style="display:flex; flex:1; gap:10px; align-items:center;">
           <input type="hidden" name="edit_vraag_id" value="${q.id}">
           <input type="text" name="edit_vraag" value="${escapeHtml(
-            q.vraag
+            q.vraag,
           )}" class="edit-input" readonly>
           <input type="text" name="edit_antwoord" value="${escapeHtml(
-            q.antwoord
+            q.antwoord,
           )}" class="edit-input" readonly>
           <div class="icon-group">
             <button type="button" class="edit-btn" title="Bewerken">
@@ -245,7 +437,7 @@
                 window.location =
                   "login.html?redirecturi=" +
                   encodeURIComponent(
-                    window.location.pathname + window.location.search
+                    window.location.pathname + window.location.search,
                   );
                 return;
               }
@@ -278,7 +470,7 @@
                 window.location =
                   "login.html?redirecturi=" +
                   encodeURIComponent(
-                    window.location.pathname + window.location.search
+                    window.location.pathname + window.location.search,
                   );
                 return;
               }
@@ -311,7 +503,7 @@
             window.location =
               "login.html?redirecturi=" +
               encodeURIComponent(
-                window.location.pathname + window.location.search
+                window.location.pathname + window.location.search,
               );
             return;
           }
@@ -326,10 +518,368 @@
           alert("Netwerkfout bij toevoegen vraag: " + err);
         }
       };
+
+      // Sharing functionality
+      async function loadSharingStatus() {
+        try {
+          // Load friends
+          const friendsRes = await fetch("/friends", { headers });
+          if (!friendsRes.ok) return;
+          const friendsData = await friendsRes.json();
+
+          // Load sharing status
+          const shareRes = await fetch(`/vragenlijst/${lijstId}/shares`, {
+            headers,
+          });
+          const isShared = shareRes.ok ? (await shareRes.json()).shared : false;
+
+          const checkbox = document.getElementById("share-with-friends");
+          const sharedContainer = document.getElementById(
+            "shared-with-friends",
+          );
+          const friendsList = document.getElementById("friends-shared-list");
+
+          checkbox.checked = isShared;
+
+          if (friendsData.friends && friendsData.friends.length > 0) {
+            if (isShared) {
+              sharedContainer.style.display = "";
+              friendsList.innerHTML = friendsData.friends
+                .map(
+                  (friend) => `
+                <div style="padding: 8px; background: var(--surface); border-radius: 6px; font-size: 14px;">
+                  ${escapeHtml(friend.naam)} (${escapeHtml(friend.email)})
+                </div>
+              `,
+                )
+                .join("");
+            }
+          } else {
+            checkbox.disabled = true;
+            friendsList.innerHTML =
+              '<p style="color: var(--on-surface-variant); margin: 0; font-size: 12px;">Voeg eerst vrienden toe om te kunnen delen.</p>';
+          }
+        } catch (err) {
+          console.error("Error loading sharing status:", err);
+        }
+      }
+
+      document
+        .getElementById("share-with-friends")
+        .addEventListener("change", async (e) => {
+          const isChecked = e.target.checked;
+          try {
+            const res = await fetch(`/vragenlijst/${lijstId}/toggle-share`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ shared: isChecked }),
+            });
+            if (res.ok) {
+              const sharedContainer = document.getElementById(
+                "shared-with-friends",
+              );
+              if (isChecked) {
+                sharedContainer.style.display = "";
+              } else {
+                sharedContainer.style.display = "none";
+              }
+              showToast(
+                isChecked ? "Gedeeld met vrienden!" : "Niet meer gedeeld",
+              );
+            } else {
+              e.target.checked = !isChecked;
+              showToast("Fout bij delen");
+            }
+          } catch (err) {
+            console.error(err);
+            e.target.checked = !isChecked;
+            showToast("Fout bij delen");
+          }
+        });
+
+      function showToast(message) {
+        const toast = document.createElement("div");
+        toast.style.cssText = `
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background: var(--primary);
+          color: var(--on-primary);
+          padding: 16px 24px;
+          border-radius: 8px;
+          z-index: 10000;
+          animation: slideUp 0.3s ease;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+
+      // CSV Functions
+      function downloadTemplate() {
+        // Download server-hosted template for clarity
+        window.location = "/template.csv";
+      }
+
+      function downloadCSV() {
+        const vragen = document.querySelectorAll("ul.vraag-lijst li");
+        if (vragen.length === 0) {
+          showToast("Geen vragen om te exporteren");
+          return;
+        }
+
+        let csv = "Vraag,Antwoord\n";
+        vragen.forEach((li) => {
+          const vraag = li.querySelector('input[name="edit_vraag"]').value;
+          const antwoord = li.querySelector(
+            'input[name="edit_antwoord"]',
+          ).value;
+          csv +=
+            '"' +
+            vraag.replace(/"/g, '""') +
+            '","' +
+            antwoord.replace(/"/g, '""') +
+            '"\n';
+        });
+
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${lijstData.naam || "vragenlijst"}.csv`;
+        a.click();
+      }
+
+      async function importCSV(file) {
+        const text = await file.text();
+        const lines = text
+          .split("\n")
+          .map((l) => l.trim())
+          .filter((l) => l);
+
+        if (lines.length < 2) {
+          showError("CSV moet minimaal een header + 1 vraag bevatten");
+          return;
+        }
+
+        const header = lines[0].split(",").map((h) => h.trim());
+        if (
+          header.length < 2 ||
+          header[0].toLowerCase() !== "vraag" ||
+          header[1].toLowerCase() !== "antwoord"
+        ) {
+          showError(
+            'CSV moet kolommen "Vraag" en "Antwoord" hebben (gescheiden door komma)',
+          );
+          return;
+        }
+
+        const errors = [];
+        let imported = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+          const [vraag, antwoord] = lines[i]
+            .split(",")
+            .slice(0, 2)
+            .map((s) => s.trim().replace(/^"(.*)"$/, "$1"));
+
+          if (!vraag || !antwoord) {
+            errors.push(`Rij ${i + 1}: Vraag en antwoord zijn verplicht`);
+            continue;
+          }
+
+          try {
+            const res = await fetch(`/vragenlijst/${lijstId}/vraag`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ vraag, antwoord }),
+            });
+            if (res.ok) {
+              imported++;
+            } else {
+              errors.push(`Rij ${i + 1}: Fout bij opslaan`);
+            }
+          } catch (err) {
+            errors.push(`Rij ${i + 1}: ${err.message}`);
+          }
+        }
+
+        if (errors.length > 0) {
+          showError("Fouten: " + errors.join("; "));
+        }
+        if (imported > 0) {
+          showSuccess(`${imported} vragen geïmporteerd!`);
+          fetchVragen();
+        }
+      }
+
+      function showError(msg) {
+        const el = document.getElementById("csv-import-errors");
+        el.textContent = msg;
+        el.style.display = "";
+        document.getElementById("csv-import-success").style.display = "none";
+      }
+
+      function showSuccess(msg) {
+        const el = document.getElementById("csv-import-success");
+        el.textContent = msg;
+        el.style.display = "";
+        document.getElementById("csv-import-errors").style.display = "none";
+      }
+
+      // Link sharing functions
+      async function loadLinks() {
+        try {
+          const res = await fetch(`/vragenlijst/${lijstId}/share-links`, {
+            headers,
+          });
+          if (!res.ok) return;
+
+          const data = await res.json();
+          const list = document.getElementById("links-list");
+          const links = data.links || [];
+
+          if (links.length === 0) {
+            list.innerHTML =
+              '<p style="text-align: center; color: var(--on-surface-variant); padding: 12px; margin: 0; font-size: 12px;">Nog geen links gemaakt.</p>';
+            return;
+          }
+
+          list.innerHTML = links
+            .map(
+              (link) => `
+            <div style="padding: 10px; background: var(--surface-container); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 150px;">
+                <div style="font-size: 11px; color: var(--on-surface-variant); margin-bottom: 4px;">
+                  ${link.password_hash ? "🔒 Beveiligd" : "🔓 Openbaar"}
+                </div>
+                <code style="word-break: break-all; font-size: 10px; color: var(--on-surface-variant); background: var(--surface); padding: 4px; border-radius: 4px; display: block;">
+                  /share/${link.token}
+                </code>
+              </div>
+              <div style="display: flex; gap: 4px; white-space: nowrap;">
+                <button onclick="window.open('/share/${link.token}', '_blank')" style="padding: 6px 10px; font-size: 12px; background: var(--primary); color: var(--on-primary); border: none; border-radius: 4px; cursor: pointer;">
+                  👁 Bekijken
+                </button>
+                <button onclick="copyLink('${link.token}')" style="padding: 6px 8px; font-size: 12px; background: var(--secondary); color: var(--on-secondary); border: none; border-radius: 4px; cursor: pointer;" title="Link kopiëren">
+                  📋
+                </button>
+                <button onclick="deleteLink('${link.id}')" style="padding: 6px 8px; font-size: 12px; background: var(--error); color: var(--on-error); border: none; border-radius: 4px; cursor: pointer;" title="Link verwijderen">
+                  🗑
+                </button>
+              </div>
+            </div>
+          `,
+            )
+            .join("");
+        } catch (err) {
+          console.error("Error loading links:", err);
+        }
+      }
+
+      function copyLink(token) {
+        const url = `${window.location.origin}/share/${token}`;
+        navigator.clipboard.writeText(url).then(() => {
+          showToast("Link gekopieerd!");
+        });
+      }
+
+      async function deleteLink(linkId) {
+        if (!confirm("Link verwijderen?")) return;
+
+        try {
+          const res = await fetch(
+            `/vragenlijst/${lijstId}/share-links/${linkId}`,
+            {
+              method: "DELETE",
+              headers,
+            },
+          );
+          if (res.ok) {
+            showToast("Link verwijderd!");
+            loadLinks();
+          } else {
+            showToast("Fout bij verwijderen");
+          }
+        } catch (err) {
+          console.error(err);
+          showToast("Fout bij verwijderen");
+        }
+      }
+
+      async function createLink() {
+        const password = document.getElementById("link-password").value.trim();
+        try {
+          const res = await fetch(`/vragenlijst/${lijstId}/create-share-link`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ password: password || null }),
+          });
+          if (res.ok) {
+            document.getElementById("link-password").value = "";
+            showToast("Link gemaakt!");
+            loadLinks();
+          } else {
+            const err = await res.json();
+            showToast(err.error || "Fout bij maken van link");
+          }
+        } catch (err) {
+          console.error(err);
+          showToast("Fout bij maken van link");
+        }
+      }
+
+      // Event listeners for CSV
+      document.addEventListener("DOMContentLoaded", () => {
+        const downloadTemplateBtn = document.getElementById(
+          "download-template-btn",
+        );
+        const exportCsvBtn = document.getElementById("export-csv-btn");
+        const importCsvBtn = document.getElementById("import-csv-btn");
+        const csvImport = document.getElementById("csv-import");
+        const createLinkBtn = document.getElementById("create-link-btn");
+
+        if (downloadTemplateBtn) {
+          downloadTemplateBtn.addEventListener("click", downloadTemplate);
+        }
+        if (exportCsvBtn) {
+          exportCsvBtn.addEventListener("click", downloadCSV);
+        }
+        if (importCsvBtn && csvImport) {
+          importCsvBtn.addEventListener("click", () => {
+            if (!csvImport.files[0]) {
+              showError("Selecteer een CSV bestand");
+              return;
+            }
+            importCSV(csvImport.files[0]);
+          });
+        }
+        if (createLinkBtn) {
+          createLinkBtn.addEventListener("click", createLink);
+        }
+      });
+
       window.onload = async () => {
         await fetchLijst();
         await fetchVragen();
+        await loadSharingStatus();
+        await loadLinks();
       };
+
+      // Wire header share button to toggle the share checkbox
+      document.addEventListener("DOMContentLoaded", () => {
+        const headerBtn = document.getElementById("share-header-btn");
+        const checkbox = document.getElementById("share-with-friends");
+        if (headerBtn && checkbox) {
+          headerBtn.addEventListener("click", () => {
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event("change"));
+            // ensure the share panel is visible when enabling
+            if (checkbox.checked)
+              document.getElementById("shared-with-friends").style.display = "";
+          });
+        }
+      });
     </script>
   </body>
 </html>

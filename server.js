@@ -17,7 +17,7 @@ const DEBUG_REQUESTS =
 
 const SECRET = process.env.SECRET;
 if (!SECRET) {
-  console.error('FATAL: SECRET environment variable is required');
+  console.error("FATAL: SECRET environment variable is required");
   process.exit(1);
 }
 const PORT = process.env.PORT || 3000;
@@ -176,7 +176,7 @@ async function buildSessionPayload(sessionId) {
 
   const currentQuestion = sess.current_question_id
     ? await db.get(
-        "SELECT id, vraag, antwoord FROM vragen WHERE id = ?",
+        "SELECT id, vraag, antwoord, case_sensitive, alternate_answers, time_limit FROM vragen WHERE id = ?",
         sess.current_question_id,
       )
     : null;
@@ -192,12 +192,29 @@ async function buildSessionPayload(sessionId) {
     sess.klas_id,
   );
 
+  // determine which learners have answered the current question (per-question)
+  let answeredIds = new Set();
+  if (currentQuestion) {
+    try {
+      const answeredRows = await db.all(
+        "SELECT leerling_id FROM resultaten WHERE sessie_id = ? AND vraag_id = ?",
+        sessionId,
+        currentQuestion.id,
+      );
+      for (const ar of answeredRows) answeredIds.add(ar.leerling_id);
+    } catch (e) {
+      console.warn("Could not fetch per-learner answers:", e.message || e);
+    }
+  }
+
   // attach ephemeral presence info (updated via /status-update)
   for (const l of leerlingen) {
     const p = presence.get(String(l.id));
     l.last_seen = p ? p.last_seen : null;
     l.online = p ? p.status === "actief" : false;
     l.focused = p ? Boolean(p.focused) : false;
+    // per-question answered flag for teacher clients
+    l.answered = answeredIds.has(l.id) || false;
   }
 
   const totalStudents = await db.get(
@@ -288,19 +305,19 @@ app.get("/sessies/:id/stream", async (req, res) => {
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-store, must-revalidate",
-      "Pragma": "no-cache",
-      "Expires": "0",
-      "Connection": "keep-alive",
+      Pragma: "no-cache",
+      Expires: "0",
+      Connection: "keep-alive",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Cache-Control",
     });
-    
+
     // Flush headers immediately to prevent buffering
     res.flushHeaders();
-    
+
     // Send initial connection event
     res.write("event: connect\n");
-    res.write("data: {\"status\":\"connected\"}\n\n");
+    res.write('data: {"status":"connected"}\n\n');
 
     // register client
     const set = sseClients.get(id) || new Set();
@@ -367,62 +384,83 @@ app.post("/notify-session-update", express.json(), async (req, res) => {
 });
 
 // Static files with proper headers to prevent compression issues
-app.use(express.static(__dirname, {
-  maxAge: '1d', // Cache for 1 day
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, path) => {
-    // Disable compression for problematic file types
-    if (path.endsWith('.css') || path.endsWith('.js') || path.endsWith('.ico') || path.includes('icon')) {
-      res.setHeader('Content-Encoding', 'identity');
-      res.removeHeader('Content-Encoding');
-    }
-    
-    // Set proper content types
-    if (path.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css; charset=utf-8');
-    } else if (path.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    } else if (path.endsWith('.ico')) {
-      res.setHeader('Content-Type', 'image/x-icon');
-    } else if (path.endsWith('.png')) {
-      res.setHeader('Content-Type', 'image/png');
-    } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
-      res.setHeader('Content-Type', 'image/jpeg');
-    } else if (path.endsWith('.svg')) {
-      res.setHeader('Content-Type', 'image/svg+xml');
-    }
-    
-    // Prevent caching issues
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
-    res.setHeader('Vary', 'Accept-Encoding');
-  }
-}));
+app.use(
+  express.static(__dirname, {
+    maxAge: "1d", // Cache for 1 day
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, path) => {
+      // Disable compression for problematic file types
+      if (
+        path.endsWith(".css") ||
+        path.endsWith(".js") ||
+        path.endsWith(".ico") ||
+        path.includes("icon")
+      ) {
+        res.setHeader("Content-Encoding", "identity");
+        res.removeHeader("Content-Encoding");
+      }
+
+      // Set proper content types
+      if (path.endsWith(".css")) {
+        res.setHeader("Content-Type", "text/css; charset=utf-8");
+      } else if (path.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+      } else if (path.endsWith(".ico")) {
+        res.setHeader("Content-Type", "image/x-icon");
+      } else if (path.endsWith(".png")) {
+        res.setHeader("Content-Type", "image/png");
+      } else if (path.endsWith(".jpg") || path.endsWith(".jpeg")) {
+        res.setHeader("Content-Type", "image/jpeg");
+      } else if (path.endsWith(".svg")) {
+        res.setHeader("Content-Type", "image/svg+xml");
+      }
+
+      // Prevent caching issues
+      res.setHeader("Cache-Control", "public, max-age=86400"); // 1 day
+      res.setHeader("Vary", "Accept-Encoding");
+    },
+  }),
+);
 
 // Add fallback route for problematic files
-app.get('/assets/css/styles.css', (req, res) => {
-  const cssPath = path.join(__dirname, 'assets/css/styles.css');
+app.get("/assets/css/styles.css", (req, res) => {
+  const cssPath = path.join(__dirname, "assets/css/styles.css");
   if (fs.existsSync(cssPath)) {
-    res.setHeader('Content-Type', 'text/css; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader("Content-Type", "text/css; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     res.sendFile(cssPath);
   } else {
-    res.status(404).send('CSS file not found');
+    res.status(404).send("CSS file not found");
   }
 });
 
-app.get('/assets/img/logo2.png', (req, res) => {
-  const iconPath = path.join(__dirname, 'assets/img/logo2.png');
+app.get("/assets/img/logo2.png", (req, res) => {
+  const iconPath = path.join(__dirname, "assets/img/logo2.png");
   if (fs.existsSync(iconPath)) {
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     res.sendFile(iconPath);
   } else {
-    res.status(404).send('Icon file not found');
+    res.status(404).send("Icon file not found");
+  }
+});
+
+// serve ebook files by filename (secure to assets/ebooks directory only)
+app.get("/ebooks/:file", (req, res) => {
+  const file = req.params.file;
+  // basic validation: no directory traversal
+  if (file.includes("..")) return res.status(400).send("invalid file");
+  const ebookPath = path.join(__dirname, "assets/ebooks", file);
+  if (fs.existsSync(ebookPath)) {
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.sendFile(ebookPath);
+  } else {
+    res.status(404).send("ebook not found");
   }
 });
 
@@ -493,7 +531,10 @@ async function initDB() {
         vakken TEXT DEFAULT '',
         is_public INTEGER DEFAULT 0,
         badge TEXT DEFAULT 'none',
-        current_ebook_id INTEGER
+        current_ebook_id INTEGER,
+        friend_code TEXT UNIQUE,
+        klas_code TEXT UNIQUE,
+        rol TEXT DEFAULT 'docent'
       );
       
       CREATE TABLE IF NOT EXISTS klassen (
@@ -547,6 +588,12 @@ async function initDB() {
         vragenlijst_id INTEGER NOT NULL,
         vraag TEXT NOT NULL,
         antwoord TEXT NOT NULL,
+        case_sensitive INTEGER DEFAULT 0,
+        alternate_answers TEXT DEFAULT NULL,
+        time_limit INTEGER DEFAULT NULL,
+        type TEXT DEFAULT 'text',
+        opties TEXT DEFAULT NULL,
+        punten INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       
@@ -659,6 +706,43 @@ async function initDB() {
         need.push("ALTER TABLE docenten ADD COLUMN rol TEXT DEFAULT 'docent';");
 
       for (const q of need) {
+        // Ensure vragen table has newer optional columns (case_sensitive, alternate_answers, time_limit, type, opties, punten)
+        try {
+          const vcols = await db.all("PRAGMA table_info(vragen);");
+          const vcolNames = vcols.map((c) => c.name);
+          const vneed = [];
+          if (!vcolNames.includes("type"))
+            vneed.push("ALTER TABLE vragen ADD COLUMN type TEXT DEFAULT NULL;");
+          if (!vcolNames.includes("opties"))
+            vneed.push(
+              "ALTER TABLE vragen ADD COLUMN opties TEXT DEFAULT NULL;",
+            );
+          if (!vcolNames.includes("punten"))
+            vneed.push(
+              "ALTER TABLE vragen ADD COLUMN punten INTEGER DEFAULT 0;",
+            );
+          if (!vcolNames.includes("case_sensitive"))
+            vneed.push(
+              "ALTER TABLE vragen ADD COLUMN case_sensitive INTEGER DEFAULT 0;",
+            );
+          if (!vcolNames.includes("alternate_answers"))
+            vneed.push(
+              "ALTER TABLE vragen ADD COLUMN alternate_answers TEXT DEFAULT NULL;",
+            );
+          if (!vcolNames.includes("time_limit"))
+            vneed.push(
+              "ALTER TABLE vragen ADD COLUMN time_limit INTEGER DEFAULT NULL;",
+            );
+          for (const q of vneed) {
+            try {
+              await db.exec(q);
+            } catch (e) {
+              console.warn("vragen column migration skipped:", e.message || e);
+            }
+          }
+        } catch (e) {
+          console.error("vragen column checks failed:", e);
+        }
         try {
           await db.exec(q);
           console.log("Added docenten column via:", q);
@@ -770,6 +854,73 @@ async function initDB() {
       console.warn("Could not inspect licenties columns:", err.message);
     }
 
+    // Create friendships table for friend management
+    try {
+      await db.exec(`CREATE TABLE IF NOT EXISTS friendships (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        docent_id_1 INTEGER NOT NULL,
+        docent_id_2 INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(docent_id_1, docent_id_2),
+        FOREIGN KEY(docent_id_1) REFERENCES docenten(id),
+        FOREIGN KEY(docent_id_2) REFERENCES docenten(id)
+      );`);
+      const fcount = await db.get("SELECT COUNT(*) as c FROM friendships;");
+      if (fcount && fcount.c >= 0) console.log("friendships table ready ✅");
+    } catch (err) {
+      console.warn("Could not create/check friendships table:", err.message);
+    }
+
+    // Create vragenlijst_shares table for question list sharing
+    try {
+      await db.exec(`CREATE TABLE IF NOT EXISTS vragenlijst_shares (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vragenlijst_id INTEGER NOT NULL,
+        docent_id INTEGER NOT NULL,
+        shared_by_id INTEGER NOT NULL,
+        can_edit INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(vragenlijst_id, docent_id),
+        FOREIGN KEY(vragenlijst_id) REFERENCES vragenlijsten(id),
+        FOREIGN KEY(docent_id) REFERENCES docenten(id),
+        FOREIGN KEY(shared_by_id) REFERENCES docenten(id)
+      );`);
+      const scount = await db.get(
+        "SELECT COUNT(*) as c FROM vragenlijst_shares;",
+      );
+      if (scount && scount.c >= 0)
+        console.log("vragenlijst_shares table ready ✅");
+    } catch (err) {
+      console.warn(
+        "Could not create/check vragenlijst_shares table:",
+        err.message,
+      );
+    }
+
+    // Create vragenlijst_links table for link sharing with optional password
+    try {
+      await db.exec(`CREATE TABLE IF NOT EXISTS vragenlijst_links (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vragenlijst_id INTEGER NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        password_hash TEXT DEFAULT NULL,
+        created_by_id INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(vragenlijst_id) REFERENCES vragenlijsten(id),
+        FOREIGN KEY(created_by_id) REFERENCES docenten(id)
+      );`);
+      const lcount = await db.get(
+        "SELECT COUNT(*) as c FROM vragenlijst_links;",
+      );
+      if (lcount && lcount.c >= 0)
+        console.log("vragenlijst_links table ready ✅");
+    } catch (err) {
+      console.warn(
+        "Could not create/check vragenlijst_links table:",
+        err.message,
+      );
+    }
+
     console.log("Database ready ✅");
   } catch (err) {
     console.error("DB init error:", err);
@@ -799,21 +950,27 @@ app.post("/register", async (req, res) => {
     if (exists) return res.status(400).json({ error: "email already exists" });
 
     const hashed = await bcrypt.hash(rawPassword, 10);
+    const friendCode = generateUniqueCode(8);
+    const klasCode = generateUniqueCode(6);
 
     // Insert into docenten using the imported column names
     await db.run(
-      "INSERT INTO docenten (naam, email, wachtwoord) VALUES (?, ?, ?)",
-      [naam, email, hashed],
+      "INSERT INTO docenten (naam, email, wachtwoord, friend_code, klas_code) VALUES (?, ?, ?, ?, ?)",
+      [naam, email, hashed, friendCode, klasCode],
     );
 
     // Return token so the client can authenticate immediately
     const newUser = await db.get(
-      "SELECT id, email, naam FROM docenten WHERE email = ?",
+      "SELECT id, email, naam, friend_code, klas_code FROM docenten WHERE email = ?",
       email,
     );
     const token = jwt.sign({ id: newUser.id, email: newUser.email }, SECRET);
 
-    res.json({ token });
+    res.json({
+      token,
+      friend_code: newUser.friend_code,
+      klas_code: newUser.klas_code,
+    });
   } catch (err) {
     console.error("Register error:", err);
     res.status(500).json({ error: "Server error" });
@@ -868,6 +1025,15 @@ function auth(req, res, next) {
 // Simple admin check: docent with id 1 is the admin
 function isAdmin(req) {
   return req && req.user && req.user.id === 1;
+}
+
+// Generate unique code for friend_code or klas_code
+function generateUniqueCode(length = 8) {
+  return crypto
+    .randomBytes(length)
+    .toString("hex")
+    .toUpperCase()
+    .slice(0, length);
 }
 
 // Return active license row for a given docent and klas (assigned to klas)
@@ -1063,10 +1229,25 @@ app.get("/my-current-ebook", auth, async (req, res) => {
     const id = row?.current_ebook_id || null;
     if (!id) return res.json({ id: null });
     const book = await db.get(
-      "SELECT id, titel, omschrijving FROM boeken WHERE id = ?",
+      "SELECT id, titel, omschrijving, bestand FROM boeken WHERE id = ?",
       id,
     );
-    res.json({ id, book });
+
+    // optionally load the actual ebook JSON file from disk
+    let content = null;
+    if (book && book.bestand) {
+      try {
+        const filePath = path.join(__dirname, "assets/ebooks", book.bestand);
+        if (fs.existsSync(filePath)) {
+          const raw = fs.readFileSync(filePath, "utf-8");
+          content = JSON.parse(raw);
+        }
+      } catch (e) {
+        console.warn("could not load ebook file", book.bestand, e.message);
+      }
+    }
+
+    res.json({ id, book, content });
   } catch (err) {
     console.error("/my-current-ebook error:", err);
     res.status(500).json({ error: "server error" });
@@ -1238,6 +1419,419 @@ app.get("/dashboard-data", auth, async (req, res) => {
   }
 });
 
+// --------------------
+// Friend/Friend Code endpoints
+// --------------------
+
+// Get friend code and klas code for authenticated user
+app.get("/my-codes", auth, async (req, res) => {
+  try {
+    const user = await db.get(
+      "SELECT id, friend_code, klas_code FROM docenten WHERE id = ?",
+      req.user.id,
+    );
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json({ friend_code: user.friend_code, klas_code: user.klas_code });
+  } catch (err) {
+    console.error("/my-codes error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Add a friend by friend code
+app.post("/add-friend", auth, express.json(), async (req, res) => {
+  try {
+    const friendCode = (req.body.friend_code || "").trim().toUpperCase();
+    if (!friendCode)
+      return res.status(400).json({ error: "friend_code required" });
+
+    // Find friend by friend_code
+    const friend = await db.get(
+      "SELECT id, naam FROM docenten WHERE friend_code = ?",
+      friendCode,
+    );
+    if (!friend)
+      return res.status(404).json({ error: "Friend code not found" });
+    if (friend.id === req.user.id)
+      return res.status(400).json({ error: "Cannot add yourself as friend" });
+
+    // Check if friendship already exists
+    const existing = await db.get(
+      "SELECT id FROM friendships WHERE (docent_id_1 = ? AND docent_id_2 = ?) OR (docent_id_1 = ? AND docent_id_2 = ?)",
+      req.user.id,
+      friend.id,
+      friend.id,
+      req.user.id,
+    );
+    if (existing) return res.status(400).json({ error: "Already friends" });
+
+    // Insert friendship (use lower id first for consistency)
+    const id1 = Math.min(req.user.id, friend.id);
+    const id2 = Math.max(req.user.id, friend.id);
+    await db.run(
+      "INSERT INTO friendships (docent_id_1, docent_id_2) VALUES (?, ?)",
+      [id1, id2],
+    );
+
+    res.json({ ok: true, friend: { id: friend.id, naam: friend.naam } });
+  } catch (err) {
+    console.error("/add-friend error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Get list of friends for authenticated user
+app.get("/friends", auth, async (req, res) => {
+  try {
+    const friends = await db.all(
+      `SELECT d.id, d.naam, d.email, d.avatar
+       FROM friendships f
+       JOIN docenten d ON (
+         (f.docent_id_1 = ? AND d.id = f.docent_id_2) OR
+         (f.docent_id_2 = ? AND d.id = f.docent_id_1)
+       )
+       ORDER BY d.naam ASC`,
+      req.user.id,
+      req.user.id,
+    );
+    res.json({ friends: friends || [] });
+  } catch (err) {
+    console.error("/friends error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Reset friend code for authenticated user
+app.post("/reset-friend-code", auth, express.json(), async (req, res) => {
+  try {
+    const newFriendCode = generateUniqueCode(8);
+    await db.run(
+      "UPDATE docenten SET friend_code = ? WHERE id = ?",
+      newFriendCode,
+      req.user.id,
+    );
+    res.json({ ok: true, friend_code: newFriendCode });
+  } catch (err) {
+    console.error("/reset-friend-code error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Reset klas code for authenticated user
+app.post("/reset-klas-code", auth, express.json(), async (req, res) => {
+  try {
+    const newKlasCode = generateUniqueCode(6);
+    await db.run(
+      "UPDATE docenten SET klas_code = ? WHERE id = ?",
+      newKlasCode,
+      req.user.id,
+    );
+    res.json({ ok: true, klas_code: newKlasCode });
+  } catch (err) {
+    console.error("/reset-klas-code error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// --------------------
+// Question list sharing endpoints
+// --------------------
+
+// Check if vragenlijst is shared with friends
+app.get("/vragenlijst/:id/shares", auth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const share = await db.get(
+      "SELECT id FROM vragenlijst_shares WHERE vragenlijst_id = ? AND shared_by_id = ?",
+      id,
+      req.user.id,
+    );
+    res.json({ shared: !!share });
+  } catch (err) {
+    console.error("/vragenlijst/:id/shares error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Toggle sharing of vragenlijst with all friends
+app.post(
+  "/vragenlijst/:id/toggle-share",
+  auth,
+  express.json(),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const shared = req.body.shared;
+
+      // Verify ownership
+      const vl = await db.get(
+        "SELECT vragenlijsten.id FROM vragenlijsten JOIN klassen ON vragenlijsten.klas_id = klassen.id WHERE vragenlijsten.id = ? AND klassen.docent_id = ?",
+        id,
+        req.user.id,
+      );
+      if (!vl) return res.status(403).json({ error: "unauthorized" });
+
+      if (shared) {
+        // Share with all friends
+        const friends = await db.all(
+          `SELECT DISTINCT d.id FROM friendships f
+         JOIN docenten d ON (
+           (f.docent_id_1 = ? AND d.id = f.docent_id_2) OR
+           (f.docent_id_2 = ? AND d.id = f.docent_id_1)
+         )`,
+          req.user.id,
+          req.user.id,
+        );
+
+        for (const friend of friends) {
+          try {
+            await db.run(
+              "INSERT OR IGNORE INTO vragenlijst_shares (vragenlijst_id, docent_id, shared_by_id) VALUES (?, ?, ?)",
+              id,
+              friend.id,
+              req.user.id,
+            );
+          } catch (e) {
+            console.warn("Could not share with friend:", e.message);
+          }
+        }
+
+        // Automatically create a public share link when sharing with friends
+        const existingLink = await db.get(
+          "SELECT id, token FROM vragenlijst_links WHERE vragenlijst_id = ? AND created_by_id = ?",
+          id,
+          req.user.id,
+        );
+
+        let shareToken;
+        if (existingLink) {
+          shareToken = existingLink.token;
+        } else {
+          shareToken = crypto.randomBytes(16).toString("hex");
+          await db.run(
+            "INSERT INTO vragenlijst_links (vragenlijst_id, token, created_by_id) VALUES (?, ?, ?)",
+            id,
+            shareToken,
+            req.user.id,
+          );
+        }
+
+        res.json({ ok: true, shared, share_token: shareToken });
+      } else {
+        // Remove all shares for this vragenlijst
+        await db.run(
+          "DELETE FROM vragenlijst_shares WHERE vragenlijst_id = ? AND shared_by_id = ?",
+          id,
+          req.user.id,
+        );
+
+        res.json({ ok: true, shared });
+      }
+    } catch (err) {
+      console.error("/vragenlijst/:id/toggle-share error:", err);
+      res.status(500).json({ error: "server error" });
+    }
+  },
+);
+
+// Get vragenlijsten shared with authenticated user by friends
+app.get("/vragenlijsten/shared-with-me", auth, async (req, res) => {
+  try {
+    const shared = await db.all(
+      `SELECT DISTINCT vl.*, d.naam as shared_by_naam, vl_links.token as share_token
+       FROM vragenlijst_shares vs
+       JOIN vragenlijsten vl ON vs.vragenlijst_id = vl.id
+       JOIN docenten d ON vs.shared_by_id = d.id
+       LEFT JOIN vragenlijst_links vl_links ON vl_links.vragenlijst_id = vl.id AND vl_links.created_by_id = d.id
+       WHERE vs.docent_id = ?
+       ORDER BY vs.created_at DESC`,
+      req.user.id,
+    );
+    res.json({ vragenlijsten: shared || [] });
+  } catch (err) {
+    console.error("/vragenlijsten/shared-with-me error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Get share links for a vragenlijst
+app.get("/vragenlijst/:id/share-links", auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify user owns this vragenlijst
+    const vl = await db.get(
+      `SELECT v.id, v.klas_id FROM vragenlijsten v
+       JOIN klassen k ON v.klas_id = k.id
+       WHERE v.id = ? AND k.docent_id = ?`,
+      [id, req.user.id],
+    );
+    if (!vl) return res.status(403).json({ error: "not authorized" });
+
+    const links = await db.all(
+      `SELECT id, vragenlijst_id, token, password_hash, created_at
+       FROM vragenlijst_links
+       WHERE vragenlijst_id = ?
+       ORDER BY created_at DESC`,
+      id,
+    );
+
+    res.json({ links: links || [] });
+  } catch (err) {
+    console.error("/vragenlijst/:id/share-links error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Create a new share link
+app.post(
+  "/vragenlijst/:id/create-share-link",
+  auth,
+  express.json(),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { password } = req.body;
+
+      // Verify user owns this vragenlijst
+      const vl = await db.get(
+        `SELECT v.id, v.klas_id FROM vragenlijsten v
+       JOIN klassen k ON v.klas_id = k.id
+       WHERE v.id = ? AND k.docent_id = ?`,
+        [id, req.user.id],
+      );
+      if (!vl) return res.status(403).json({ error: "not authorized" });
+
+      // Generate unique token
+      const token = crypto.randomBytes(16).toString("hex");
+
+      // Hash password if provided
+      let passwordHash = null;
+      if (password && password.trim()) {
+        passwordHash = await bcrypt.hash(password.trim(), 10);
+      }
+
+      // Insert link
+      const result = await db.run(
+        `INSERT INTO vragenlijst_links (vragenlijst_id, token, password_hash, created_by_id)
+       VALUES (?, ?, ?, ?)`,
+        [id, token, passwordHash, req.user.id],
+      );
+
+      res.json({
+        id: result.lastID,
+        vragenlijst_id: id,
+        token,
+        password_hash: passwordHash ? "***" : null,
+        created_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("/vragenlijst/:id/create-share-link error:", err);
+      res.status(500).json({ error: "server error" });
+    }
+  },
+);
+
+// Delete a share link
+app.delete(
+  "/vragenlijst/:id/share-links/:linkId",
+  auth,
+  express.json(),
+  async (req, res) => {
+    try {
+      const { id, linkId } = req.params;
+
+      // Verify user owns this vragenlijst
+      const vl = await db.get(
+        `SELECT v.id FROM vragenlijsten v
+       JOIN klassen k ON v.klas_id = k.id
+       WHERE v.id = ? AND k.docent_id = ?`,
+        [id, req.user.id],
+      );
+      if (!vl) return res.status(403).json({ error: "not authorized" });
+
+      // Verify link belongs to this vragenlijst
+      const link = await db.get(
+        `SELECT id FROM vragenlijst_links
+       WHERE id = ? AND vragenlijst_id = ?`,
+        [linkId, id],
+      );
+      if (!link) return res.status(404).json({ error: "link not found" });
+
+      // Delete link
+      await db.run(`DELETE FROM vragenlijst_links WHERE id = ?`, linkId);
+
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("/vragenlijst/:id/share-links/:linkId delete error:", err);
+      res.status(500).json({ error: "server error" });
+    }
+  },
+);
+
+// Public access to shared question list (no auth required)
+// Serve the public share page (HTML) for GET so links open a friendly page
+app.get("/share/:token", (req, res) => {
+  try {
+    res.sendFile(path.join(__dirname, "share.html"));
+  } catch (err) {
+    console.error("/share/:token GET error:", err);
+    res.status(500).send("server error");
+  }
+});
+
+// Serve static template CSV (downloadable template for CSV import)
+app.get("/template.csv", (req, res) => {
+  try {
+    res.sendFile(path.join(__dirname, "assets", "template.csv"));
+  } catch (err) {
+    console.error("/template.csv error:", err);
+    res.status(500).send("server error");
+  }
+});
+
+app.post("/share/:token", express.json(), async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body || {};
+
+    // Find the link
+    const link = await db.get(
+      `SELECT * FROM vragenlijst_links WHERE token = ?`,
+      token,
+    );
+    if (!link) return res.status(404).json({ error: "share link not found" });
+
+    // Check password if required
+    if (link.password_hash) {
+      if (!password)
+        return res.status(401).json({ error: "password required" });
+      const matches = await bcrypt.compare(password, link.password_hash);
+      if (!matches) return res.status(401).json({ error: "invalid password" });
+    }
+
+    // Get vragenlijst and questions
+    const vragenlijst = await db.get(
+      `SELECT id, naam, beschrijving, klas_id FROM vragenlijsten WHERE id = ?`,
+      link.vragenlijst_id,
+    );
+
+    const vragen = await db.all(
+      `SELECT id, vraag, antwoord FROM vragen WHERE vragenlijst_id = ? ORDER BY \`order\` ASC`,
+      link.vragenlijst_id,
+    );
+
+    res.json({
+      vragenlijst: vragenlijst || {},
+      vragen: vragen || [],
+      readOnly: true,
+    });
+  } catch (err) {
+    console.error("/share/:token error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
 // Create new klas (authenticated)
 app.post("/create-klas", auth, express.json(), async (req, res) => {
   try {
@@ -1328,34 +1922,44 @@ app.get("/api/license/info", auth, async (req, res) => {
   try {
     if (isAdmin(req)) {
       // Admin gets all licenses
-      const licenses = await db.all("SELECT * FROM licenties ORDER BY created_at DESC");
-      return res.json({ 
-        isAdmin: true, 
-        licenses: licenses.map(l => ({
+      const licenses = await db.all(
+        "SELECT * FROM licenties ORDER BY created_at DESC",
+      );
+      return res.json({
+        isAdmin: true,
+        licenses: licenses.map((l) => ({
           ...l,
-          days_until_expiry: l.vervalt_op ? Math.ceil((new Date(l.vervalt_op) - new Date()) / (1000 * 60 * 60 * 24)) : null
-        }))
+          days_until_expiry: l.vervalt_op
+            ? Math.ceil(
+                (new Date(l.vervalt_op) - new Date()) / (1000 * 60 * 60 * 24),
+              )
+            : null,
+        })),
       });
     }
 
     // Regular user gets their licenses
     const activeLicenses = await db.all(
       "SELECT l.*, k.naam as klas_naam, k.klascode FROM licenties l LEFT JOIN klassen k ON l.klas_id = k.id WHERE l.docent_id = ? AND l.actief = 1 AND (l.vervalt_op IS NULL OR DATE(l.vervalt_op) >= DATE('now'))",
-      req.user.id
+      req.user.id,
     );
 
     const expiredLicenses = await db.all(
       "SELECT l.*, k.naam as klas_naam, k.klascode FROM licenties l LEFT JOIN klassen k ON l.klas_id = k.id WHERE l.docent_id = ? AND (l.actief = 0 OR DATE(l.vervalt_op) < DATE('now'))",
-      req.user.id
+      req.user.id,
     );
 
     res.json({
       isAdmin: false,
-      activeLicenses: activeLicenses.map(l => ({
+      activeLicenses: activeLicenses.map((l) => ({
         ...l,
-        days_until_expiry: l.vervalt_op ? Math.ceil((new Date(l.vervalt_op) - new Date()) / (1000 * 60 * 60 * 24)) : null
+        days_until_expiry: l.vervalt_op
+          ? Math.ceil(
+              (new Date(l.vervalt_op) - new Date()) / (1000 * 60 * 60 * 24),
+            )
+          : null,
       })),
-      expiredLicenses
+      expiredLicenses,
     });
   } catch (err) {
     console.error("License info error:", err);
@@ -1395,24 +1999,38 @@ app.post("/api/license/assign", auth, express.json(), async (req, res) => {
     if (!klas_id) return res.status(400).json({ error: "klas_id required" });
 
     // Check if user owns the klas
-    const klas = await db.get("SELECT * FROM klassen WHERE id = ? AND docent_id = ?", klas_id, req.user.id);
+    const klas = await db.get(
+      "SELECT * FROM klassen WHERE id = ? AND docent_id = ?",
+      klas_id,
+      req.user.id,
+    );
     if (!klas) return res.status(403).json({ error: "unauthorized" });
 
     // Check if klas already has a license
     const existingLicense = await getActiveLicenseForKlas(req.user.id, klas_id);
-    if (existingLicense) return res.status(400).json({ error: "class already has active license" });
+    if (existingLicense)
+      return res
+        .status(400)
+        .json({ error: "class already has active license" });
 
     // Find unassigned license
     const unassignedLicense = await findUnassignedActiveLicense(req.user.id);
-    if (!unassignedLicense) return res.status(403).json({ error: "no unassigned active license available" });
+    if (!unassignedLicense)
+      return res
+        .status(403)
+        .json({ error: "no unassigned active license available" });
 
     // Assign license
-    await db.run("UPDATE licenties SET klas_id = ? WHERE id = ?", klas_id, unassignedLicense.id);
+    await db.run(
+      "UPDATE licenties SET klas_id = ? WHERE id = ?",
+      klas_id,
+      unassignedLicense.id,
+    );
 
-    res.json({ 
-      ok: true, 
+    res.json({
+      ok: true,
       message: "License assigned successfully",
-      license_id: unassignedLicense.id
+      license_id: unassignedLicense.id,
     });
   } catch (err) {
     console.error("License assign error:", err);
@@ -1448,12 +2066,14 @@ app.post("/api/license/check-expiry", auth, async (req, res) => {
         AND DATE(l.vervalt_op) < DATE('now')
     `);
 
-    res.json({ 
-      expiringSoon: expiringSoon.map(l => ({
+    res.json({
+      expiringSoon: expiringSoon.map((l) => ({
         ...l,
-        days_until_expiry: Math.ceil((new Date(l.vervalt_op) - new Date()) / (1000 * 60 * 60 * 24))
+        days_until_expiry: Math.ceil(
+          (new Date(l.vervalt_op) - new Date()) / (1000 * 60 * 60 * 24),
+        ),
       })),
-      expired 
+      expired,
     });
   } catch (err) {
     console.error("License expiry check error:", err);
@@ -1822,14 +2442,41 @@ app.post("/vragenlijst/:id/vraag", auth, express.json(), async (req, res) => {
         .json({ error: "no active license for this class" });
     }
 
-    const r = await db.run(
-      "INSERT INTO vragen (klas_id, vragenlijst_id, vraag, antwoord) VALUES (?, ?, ?, ?)",
+    // accept optional fields: case_sensitive (bool), alternate_answers (string or array), time_limit (int)
+    const caseSensitive = req.body.case_sensitive ? 1 : 0;
+    let alternate = null;
+    if (req.body.alternate_answers) {
+      try {
+        if (Array.isArray(req.body.alternate_answers))
+          alternate = JSON.stringify(req.body.alternate_answers);
+        else if (typeof req.body.alternate_answers === "string") {
+          // allow semicolon/comma-separated list for convenience
+          const parts = req.body.alternate_answers
+            .split(/;|,/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          if (parts.length) alternate = JSON.stringify(parts);
+        }
+      } catch (e) {
+        alternate = null;
+      }
+    }
+    const timeLimit = req.body.time_limit
+      ? parseInt(req.body.time_limit, 10)
+      : null;
+
+    const insertSql = `INSERT INTO vragen (klas_id, vragenlijst_id, vraag, antwoord, case_sensitive, alternate_answers, time_limit) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const insertResult = await db.run(
+      insertSql,
       vl.klas_id,
       id,
       vraag,
       antwoord,
+      caseSensitive,
+      alternate,
+      timeLimit,
     );
-    res.json({ ok: true, id: r.lastID });
+    res.json({ ok: true, id: insertResult.lastID });
   } catch (err) {
     console.error("/vragenlijst/:id/vraag error:", err);
     res.status(500).json({ error: "server error" });
@@ -2313,10 +2960,9 @@ app.get("/sessies/:id/cast", async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const sess = await db.get(
       "SELECT s.*, k.naam as klasnaam, k.klascode FROM sessies s JOIN klassen k ON k.id = s.klas_id WHERE s.id = ?",
-      id
+      id,
     );
-    if (!sess)
-      return res.status(404).json({ error: "sessie not found" });
+    if (!sess) return res.status(404).json({ error: "sessie not found" });
 
     // Only return public-safe information for cast
     const currentQuestion = sess.current_question_id
@@ -2325,7 +2971,7 @@ app.get("/sessies/:id/cast", async (req, res) => {
           sess.current_question_id,
         )
       : null;
-    
+
     const answerCount = currentQuestion
       ? await db.get(
           "SELECT COUNT(*) as c FROM resultaten WHERE sessie_id = ? AND vraag_id = ?",
@@ -2341,10 +2987,10 @@ app.get("/sessies/:id/cast", async (req, res) => {
         klascode: sess.klascode,
         current_question_id: sess.current_question_id,
         actief: sess.actief,
-        started_at: sess.started_at
+        started_at: sess.started_at,
       },
       currentQuestion,
-      answerCount: answerCount.c
+      answerCount: answerCount.c,
     });
   } catch (err) {
     console.error("GET /sessies/:id/cast error:", err);
@@ -2674,6 +3320,61 @@ app.delete("/sessies/:id/leerling/:lid", auth, async (req, res) => {
   }
 });
 
+// Get per-learner details for a session (teacher only)
+app.get("/sessies/:id/leerling/:lid", auth, async (req, res) => {
+  try {
+    const sessId = parseInt(req.params.id, 10);
+    const lid = parseInt(req.params.lid, 10);
+    const sess = await db.get(
+      "SELECT * FROM sessies WHERE id = ? AND docent_id = ?",
+      sessId,
+      req.user.id,
+    );
+    if (!sess) return res.status(404).json({ error: "sessie not found" });
+
+    const leerling = await db.get(
+      "SELECT id, naam, klas_id, created_at FROM leerlingen WHERE id = ?",
+      lid,
+    );
+    if (!leerling) return res.status(404).json({ error: "leerling not found" });
+
+    const answers = await db.all(
+      `SELECT r.id, r.vraag_id, v.vraag as vraag, r.antwoord as gegeven_antwoord, r.status, r.points, r.created_at
+         FROM resultaten r
+         LEFT JOIN vragen v ON v.id = r.vraag_id
+         WHERE r.sessie_id = ? AND r.leerling_id = ?
+         ORDER BY r.created_at DESC`,
+      sessId,
+      lid,
+    );
+
+    const stats = { goed: 0, typfout: 0, fout: 0, total: 0 };
+    for (const a of answers) {
+      stats.total++;
+      if (a.status === "goed") stats.goed++;
+      else if (a.status === "typfout") stats.typfout++;
+      else if (a.status === "fout") stats.fout++;
+    }
+
+    const scoreRow = await db.get(
+      "SELECT COALESCE(SUM(points),0) as points FROM resultaten WHERE sessie_id = ? AND leerling_id = ?",
+      sessId,
+      lid,
+    );
+
+    res.json({
+      ok: true,
+      leerling,
+      answers,
+      stats,
+      points: scoreRow?.points || 0,
+    });
+  } catch (err) {
+    console.error("GET /sessies/:id/leerling/:lid error:", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
 // Export results CSV for a session (authenticated)
 app.get("/sessies/:id/export", auth, async (req, res) => {
   try {
@@ -2804,14 +3505,20 @@ app.post("/leerling/join", express.json(), async (req, res) => {
     try {
       const activeSession = await db.get(
         "SELECT id FROM sessies WHERE klas_id = ? AND actief = 1 LIMIT 1",
-        klas.id
+        klas.id,
       );
       if (activeSession) {
         session_id = activeSession.id;
       }
     } catch (e) {}
 
-    res.json({ ok: true, leerling_id: lid, klas_id: klas.id, klas_code: code, session_id });
+    res.json({
+      ok: true,
+      leerling_id: lid,
+      klas_id: klas.id,
+      klas_code: code,
+      session_id,
+    });
   } catch (err) {
     console.error("/leerling/join error:", err);
     res.status(500).json({ error: "server error" });
@@ -2954,23 +3661,55 @@ app.post("/sessies/:id/answer", express.json(), async (req, res) => {
 
     // auto-grade: fetch correct answer and compare (loose normalizing: trim, collapse spaces, case-insensitive)
     const correctRow = await db.get(
-      "SELECT antwoord FROM vragen WHERE id = ?",
+      "SELECT antwoord, case_sensitive, alternate_answers FROM vragen WHERE id = ?",
       vraag_id,
     );
-    const normalize = (s) =>
+
+    const collapseSpaces = (s) =>
       String(s || "")
         .replace(/\s+/g, " ")
-        .trim()
-        .toLowerCase();
-    let status = "onbekend";
+        .trim();
+    let status = "fout";
     let points = 0;
     if (correctRow) {
-      if (normalize(correctRow.antwoord) === normalize(antwoord)) {
-        status = "goed";
-        points = 10;
-      } else {
-        status = "onbekend";
-        points = 0;
+      // build list of acceptable answers (primary + alternates)
+      let accepted = [];
+      if (correctRow.antwoord) accepted.push(String(correctRow.antwoord));
+      if (correctRow.alternate_answers) {
+        try {
+          const parsed = JSON.parse(correctRow.alternate_answers);
+          if (Array.isArray(parsed))
+            accepted = accepted.concat(parsed.map(String));
+        } catch (e) {
+          // fall back to splitting
+          accepted = accepted.concat(
+            String(correctRow.alternate_answers)
+              .split(/;|,/)
+              .map((s) => s.trim())
+              .filter(Boolean),
+          );
+        }
+      }
+
+      const caseSensitive = correctRow.case_sensitive ? true : false;
+
+      for (let acc of accepted) {
+        if (!caseSensitive) {
+          if (
+            collapseSpaces(acc).toLowerCase() ===
+            collapseSpaces(antwoord).toLowerCase()
+          ) {
+            status = "goed";
+            points = 10;
+            break;
+          }
+        } else {
+          if (collapseSpaces(acc) === collapseSpaces(antwoord)) {
+            status = "goed";
+            points = 10;
+            break;
+          }
+        }
       }
     }
 
@@ -3067,7 +3806,7 @@ process.on("unhandledRejection", (reason, p) => {
 });
 
 // Start the server with VPS compatibility
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ API running on port ${PORT}`);
   console.log(`🌐 Local: http://localhost:${PORT}`);
   console.log(`🌐 Network: http://0.0.0.0:${PORT}`);

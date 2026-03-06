@@ -352,6 +352,34 @@ label {
   margin-top: 4px;
 }
 
+/* Profile settings layout */
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ml-auto {
+  margin-left: auto !important;
+}
+
+/* ebook viewer styles */
+.ebook-chapter {
+  margin-top: 24px;
+}
+.ebook-chapter h3 {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+
+
 .small-muted {
   color: var(--on-surface-variant);
   font-size: 12px;
@@ -758,6 +786,35 @@ label {
 /* Enhanced Selection */
 ::selection {
   background: var(--primary-container);
+}
+
+/* Utility helpers */
+.center-card {
+  max-width: 420px;
+  margin: 40px auto;
+}
+
+.mt-8 { margin-top: 8px !important; }
+.mt-12 { margin-top: 12px !important; }
+.mb-12 { margin-bottom: 12px !important; }
+.mb-20 { margin-bottom: 20px !important; }
+.mt-4 { margin-top: 4px !important; }
+.flex-grow { flex: 1; }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* small modifier for buttons and inputs */
+.small {
+  font-size: 12px;
+  padding: 6px 12px !important;
+  min-height: 32px;
+}
+
+
   color: var(--on-primary-container);
   border-radius: var(--radius-xs);
 }

@@ -4,8 +4,16 @@
     <meta charset="utf-8" />
     <title>Dashboard</title>
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@300..800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <script src="https://cdn.jsdelivr.net/npm/jdenticon@3.2.0/dist/jdenticon.min.js"></script>
   </head>
@@ -19,7 +27,11 @@
         "
       >
         <div class="chip">
-          <span class="material-icons" style="font-size: 16px; margin-right: 4px;">school</span>
+          <span
+            class="material-icons"
+            style="font-size: 16px; margin-right: 4px"
+            >school</span
+          >
           Overhoorder
         </div>
         <div class="profile-container">
@@ -49,11 +61,19 @@
             </div>
             <div class="divider" aria-hidden="true"></div>
             <a href="docent_settings.html" role="menuitem">
-              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">settings</span>
+              <span
+                class="material-icons"
+                style="font-size: 16px; margin-right: 8px"
+                >settings</span
+              >
               Instellingen
             </a>
             <a href="profile.html" role="menuitem">
-              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">person</span>
+              <span
+                class="material-icons"
+                style="font-size: 16px; margin-right: 8px"
+                >person</span
+              >
               Profiel
             </a>
             <a
@@ -62,7 +82,11 @@
               class="logout logout-btn"
               role="menuitem"
             >
-              <span class="material-icons" style="font-size: 16px; margin-right: 8px;">logout</span>
+              <span
+                class="material-icons"
+                style="font-size: 16px; margin-right: 8px"
+                >logout</span
+              >
               Uitloggen
             </a>
           </div>
@@ -73,7 +97,25 @@
 
       <div class="card">
         <h3>
-          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">add_circle</span>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >class</span
+          >
+          Uw klassen
+        </h3>
+        <div id="klassenList"></div>
+      </div>
+
+      <div style="height: 16px"></div>
+
+      <div class="card">
+        <h3>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >add_circle</span
+          >
           Nieuwe klas
         </h3>
         <form id="createKlasForm">
@@ -82,7 +124,11 @@
           <label>Vak (optioneel)</label><input name="vak" id="vak" />
           <div style="margin-top: 12px">
             <button class="btn-primary" type="submit">
-              <span class="material-icons" style="font-size: 16px; margin-right: 6px;">add</span>
+              <span
+                class="material-icons"
+                style="font-size: 16px; margin-right: 6px"
+                >add</span
+              >
               Klas aanmaken
             </button>
           </div>
@@ -93,17 +139,11 @@
 
       <div class="card">
         <h3>
-          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">class</span>
-          Uw klassen
-        </h3>
-        <div id="klassenList"></div>
-      </div>
-
-      <div style="height: 16px"></div>
-
-      <div class="card">
-        <h3>
-          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">library_books</span>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >library_books</span
+          >
           Vragenlijstbibliotheek
         </h3>
         <p class="helper">
@@ -113,10 +153,13 @@
       </div>
 
       <div style="height: 16px"></div>
-
       <div class="card">
         <h3>
-          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">book</span>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >book</span
+          >
           Boekenlicenties
         </h3>
         <div id="boekenList"></div>
@@ -126,7 +169,28 @@
 
       <div class="card">
         <h3>
-          <span class="material-icons" style="font-size: 20px; margin-right: 8px; vertical-align: middle;">verified</span>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >people</span
+          >
+          Vragenlijsten van vrienden
+        </h3>
+        <p class="helper">
+          Vragenlijsten die uw vrienden met u hebben gedeeld.
+        </p>
+        <div id="friendsVragenlijsten"></div>
+      </div>
+
+      <div style="height: 16px"></div>
+
+      <div class="card">
+        <h3>
+          <span
+            class="material-icons"
+            style="font-size: 20px; margin-right: 8px; vertical-align: middle"
+            >verified</span
+          >
           Licenties
         </h3>
         <div id="licentiesList"></div>
@@ -253,14 +317,14 @@
             const ul = document.createElement("ul");
             j.boeken.forEach((b) => {
               const li = document.createElement("li");
-              li.style.margin = "10px 0";
+              li.className = "mb-12";
               li.innerHTML = `<strong>${escapeHtml(
                 b.titel,
               )}</strong><div class="helper">${escapeHtml(
                 b.omschrijving || "",
               )}</div>`;
               const div = document.createElement("div");
-              div.style.marginTop = "8px";
+              div.className = "mt-8";
               div.style.padding = "5px";
               const a = document.createElement("a");
               a.className = "btn-primary";
@@ -275,6 +339,41 @@
               ul.appendChild(li);
             });
             bo.appendChild(ul);
+          }
+
+          // Vragenlijsten van vrienden (shared-with-me)
+          const fv = document.getElementById("friendsVragenlijsten");
+          fv.innerHTML = "";
+          try {
+            const res2 = await fetch("/vragenlijsten/shared-with-me", {
+              headers: { Authorization: "Bearer " + token },
+            });
+            if (res2.ok) {
+              const j2 = await res2.json();
+              const lists = j2.vragenlijsten || [];
+              if (lists.length === 0) {
+                fv.innerHTML =
+                  '<p class="helper">Geen gedeelde vragenlijsten gevonden.</p>';
+              } else {
+                const ul = document.createElement("ul");
+                lists.forEach((l) => {
+                  const li = document.createElement("li");
+                  li.style.margin = "8px 0";
+                  const viewUrl = l.share_token
+                    ? `/share/${l.share_token}`
+                    : `manage_vragenlijst.html?id=${l.id}`;
+                  li.innerHTML = `<strong>${escapeHtml(l.naam)}</strong> <div class="helper">Gedeeld door: ${escapeHtml(l.shared_by_naam || "")}</div><div style="margin-top:6px"><a class="btn-secondary" href="${viewUrl}" target="_blank">👁 Bekijken</a><a class="btn-secondary" href="manage_klas.html?import_id=${l.id}" style="margin-left:6px;">➕ Importeren</a></div>`;
+                  ul.appendChild(li);
+                });
+                fv.appendChild(ul);
+              }
+            } else {
+              fv.innerHTML =
+                '<p class="helper">Kon gedeelde vragenlijsten niet laden.</p>';
+            }
+          } catch (e) {
+            fv.innerHTML =
+              '<p class="helper">Fout bij laden gedeelde vragenlijsten.</p>';
           }
 
           // licenties
@@ -404,21 +503,21 @@
             const menuEmail = document.getElementById("menu-email");
             const avatar = document.getElementById("avatar");
             const profileName = document.getElementById("profile-name");
-            
+
             if (menuAvatar && avatar && avatar.src) {
               menuAvatar.src = avatar.src;
             } else {
               // Fallback to default avatar
               menuAvatar.src = "assets/img/logo2.png";
             }
-            
+
             if (menuName && profileName) {
               menuName.textContent = profileName.textContent || "Docent";
             }
-            
+
             // Email is set by fetchDashboard when profile loads
           } catch (e) {
-            console.error('Error populating menu header:', e);
+            console.error("Error populating menu header:", e);
           }
         }
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
   <head>
     <meta charset="utf-8" />
@@ -40,7 +40,48 @@
             j.book?.titel || "Onbekend boek";
           document.getElementById("desc").textContent =
             j.book?.omschrijving || "";
-          // TODO: load actual book content from server or static files
+          // display book content if it was included by the API
+          const contentEl = document.getElementById("content");
+          async function renderContent(data) {
+            if (!data) {
+              contentEl.innerHTML =
+                '<p class="helper">Boekinhoud niet beschikbaar.</p>';
+              return;
+            }
+            if (Array.isArray(data.chapters)) {
+              contentEl.innerHTML = "";
+              data.chapters.forEach((ch, idx) => {
+                const h = document.createElement("h3");
+                h.textContent = ch.title || `Hoofdstuk ${idx + 1}`;
+                contentEl.appendChild(h);
+                const p = document.createElement("p");
+                p.textContent = ch.content || "";
+                contentEl.appendChild(p);
+              });
+            } else {
+              contentEl.textContent = JSON.stringify(data, null, 2);
+              contentEl.style.whiteSpace = "pre-wrap";
+            }
+          }
+          if (j.content) {
+            await renderContent(j.content);
+          } else if (j.book && j.book.bestand) {
+            // try fetching file by name
+            try {
+              const res2 = await fetch(`/ebooks/${j.book.bestand}`);
+              if (res2.ok) {
+                const fileData = await res2.json();
+                await renderContent(fileData);
+              } else {
+                await renderContent(null);
+              }
+            } catch (e) {
+              console.warn("could not fetch ebook file separately", e);
+              await renderContent(null);
+            }
+          } else {
+            await renderContent(null);
+          }
         } catch (err) {
           document.getElementById("title").textContent = "Fout bij laden";
           console.error(err);

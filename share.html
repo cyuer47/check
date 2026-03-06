@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <title>Gedeelde Vragenlijst</title>
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+  </head>
+  <body>
+    <div class="container" style="max-width: 900px; margin: 28px auto">
+      <a href="/" style="display: inline-block; margin-bottom: 12px; color:var(--primary)">◀ Terug</a>
+      <div class="card" style="padding:18px">
+        <div style="display:flex; align-items:center; gap:12px">
+          <h2 id="lijst-naam" style="margin:0; flex:1">Gedeelde Vragenlijst</h2>
+          <div id="action-area" style="display:flex; gap:8px"></div>
+        </div>
+        <p id="lijst-beschrijving" class="helper" style="margin-top:8px; color:var(--on-surface-variant)"></p>
+
+        <div id="password-area" style="margin-top:12px; display:none">
+          <p class="helper">Deze link is beveiligd met een wachtwoord. Voer het wachtwoord in om de vragenlijst te bekijken.</p>
+          <div style="display:flex; gap:8px; margin-top:8px">
+            <input id="share-password" type="password" placeholder="Wachtwoord" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--outline-variant)" />
+            <button id="submit-password" class="btn-primary">Bekijk</button>
+          </div>
+          <div id="password-error" style="color:var(--error); margin-top:8px; display:none"></div>
+        </div>
+
+        <div id="vragen-container" style="margin-top:16px; display:none">
+          <h3 style="margin:0 0 12px 0">Vragen</h3>
+          <ul id="vragen-list" class="vraag-lijst" style="margin:0; padding:0; display:grid; gap:10px"></ul>
+        </div>
+
+        <div id="loading" style="text-align:center; padding:18px; color:var(--on-surface-variant)">Laden...</div>
+      </div>
+    </div>
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str).replace(/[&<>'"]/g, (c) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        })[c]);
+      }
+
+      const pathParts = window.location.pathname.split('/');
+      const token = pathParts[pathParts.length - 1] || null;
+      if (!token) {
+        document.getElementById('loading').textContent = 'Ongeldige link.';
+      }
+
+      let fetchedData = null;
+
+      async function loadShared(password) {
+        document.getElementById('loading').style.display = '';
+        document.getElementById('password-error').style.display = 'none';
+        try {
+          const res = await fetch(`/share/${token}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: password || null }),
+          });
+
+          if (res.status === 401) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('password-area').style.display = '';
+            return;
+          }
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            document.getElementById('loading').textContent = err.error || 'Fout bij laden.';
+            return;
+          }
+
+          const data = await res.json();
+          fetchedData = data;
+          renderShared(data);
+        } catch (err) {
+          console.error(err);
+          document.getElementById('loading').textContent = 'Netwerkfout bij laden.';
+        }
+      }
+
+      function renderShared(data) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('password-area').style.display = 'none';
+        document.getElementById('lijst-naam').textContent = data.vragenlijst.naam || 'Gedeelde Vragenlijst';
+        document.getElementById('lijst-beschrijving').textContent = data.vragenlijst.beschrijving || '';
+
+        const ul = document.getElementById('vragen-list');
+        ul.innerHTML = '';
+        const vragen = data.vragen || [];
+        if (vragen.length === 0) {
+          ul.innerHTML = '<li style="padding:12px; color:var(--on-surface-variant)">Geen vragen gevonden.</li>';
+        } else {
+          vragen.forEach((q) => {
+            const li = document.createElement('li');
+            li.style.padding = '10px';
+            li.style.background = 'var(--surface)';
+            li.style.borderRadius = '8px';
+            li.style.display = 'flex';
+            li.style.flexDirection = 'column';
+            li.style.gap = '6px';
+            li.innerHTML = `
+              <div style="font-weight:600">${escapeHtml(q.vraag)}</div>
+              <div style="color:var(--on-surface-variant);">${escapeHtml(q.antwoord || '')}</div>
+            `;
+            ul.appendChild(li);
+          });
+        }
+        document.getElementById('vragen-container').style.display = '';
+
+        // Action area: if user logged in, allow adding to their klas
+        const action = document.getElementById('action-area');
+        action.innerHTML = '';
+        const tokenLocal = localStorage.getItem('token');
+        if (tokenLocal) {
+          const addBtn = document.createElement('button');
+          addBtn.className = 'btn-primary';
+          addBtn.textContent = 'Toevoegen aan klas';
+          addBtn.addEventListener('click', () => openAddToKlasModal());
+          action.appendChild(addBtn);
+        } else {
+          const login = document.createElement('a');
+          login.href = `login.html?redirecturi=${encodeURIComponent(window.location.pathname)}`;
+          login.className = 'btn-secondary';
+          login.textContent = 'Inloggen om toe te voegen';
+          action.appendChild(login);
+        }
+      }
+
+      document.getElementById('submit-password').addEventListener('click', () => {
+        const pw = document.getElementById('share-password').value.trim();
+        loadShared(pw);
+      });
+
+      // Try without password first
+      loadShared(null);
+
+      // Add-to-klas modal flow (simple prompt-based)
+      async function openAddToKlasModal() {
+        const tokenLocal = localStorage.getItem('token');
+        if (!tokenLocal) return (window.location = 'login.html?redirecturi=' + encodeURIComponent(window.location.pathname));
+
+        try {
+          const res = await fetch('/dashboard-data', { headers: { Authorization: 'Bearer ' + tokenLocal } });
+          if (!res.ok) return alert('Kon uw klassen niet laden');
+          const j = await res.json();
+          const klassen = j.klassen || [];
+          if (klassen.length === 0) return alert('U heeft nog geen klas om de vragenlijst aan toe te voegen.');
+
+          const options = klassen.map((k, i) => `${i + 1}. ${k.naam}`).join('\n');
+          const idx = prompt(`Kies klas om toe te voegen:\n${options}\nVoer nummer in:`);
+          const num = parseInt(idx, 10);
+          if (!num || num < 1 || num > klassen.length) return alert('Ongeldige keuze');
+          const klasId = klassen[num - 1].id;
+
+          const createRes = await fetch('/vragenlijst', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tokenLocal },
+            body: JSON.stringify({ klas_id: klasId, naam: fetchedData.vragenlijst.naam }),
+          });
+          if (!createRes.ok) {
+            const err = await createRes.json().catch(() => ({}));
+            return alert('Kon vragenlijst niet aanmaken: ' + (err.error || createRes.status));
+          }
+          const jr = await createRes.json();
+          const newId = jr.id;
+
+          let imported = 0; let errors = [];
+          for (const q of (fetchedData.vragen || [])) {
+            try {
+              const r = await fetch(`/vragenlijst/${newId}/vraag`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tokenLocal },
+                body: JSON.stringify({ vraag: q.vraag, antwoord: q.antwoord }),
+              });
+              if (r.ok) imported++; else errors.push(`Fout bij vraag: ${q.vraag}`);
+            } catch (e) { errors.push(e.message); }
+          }
+
+          alert(`Gereed. ${imported} vragen toegevoegd.${errors.length ? '\nFouten:\n' + errors.join('\n') : ''}`);
+        } catch (e) {
+          console.error(e);
+          alert('Fout bij toevoegen aan klas');
+        }
+      }
+        .addEventListener("click", () => {
+          const pw = document.getElementById("share-password").value.trim();
+          loadShared(pw);
+        });
+
+      // Try without password first
+      loadShared(null);
+    </script>
+  </body>
+</html>
