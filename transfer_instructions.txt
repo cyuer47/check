@@ -1,0 +1,13 @@
+# Instructies om all_data.sql van VPS naar lokale PC te kopiëren
+# Stap 1: Zorg dat je PSCP hebt (komt bij PuTTY installatie)
+# Stap 2: Open Command Prompt of PowerShell op je PC
+# Stap 3: Voer dit commando uit (vervang user, vps_ip, paden):
+
+pscp user@vps_ip:/pad/naar/all_data.sql C:\Users\ivenb\Downloads\all_data.sql
+
+# Of gebruik WinSCP/FileZilla voor GUI:
+# - Download WinSCP (gratis)
+# - Maak verbinding met je VPS (SFTP)
+# - Download het bestand naar je PC
+
+# Als je grote bestanden hebt, zorg voor stabiele verbinding.
